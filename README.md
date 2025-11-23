@@ -44,7 +44,3 @@ resources/
 ## 🤝 Notes
 
 These notes are informal, personal, and always in progress. Feel free to read or reuse anything here.
-
----
-
-If you want, I can also make a cleaner or more aesthetic version!
