@@ -166,7 +166,3 @@ echo "scale=2; 10/3" | bc
 factor 120
 ```
 
-
-
-
-Do you want me to do that?
