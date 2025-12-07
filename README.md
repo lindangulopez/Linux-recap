@@ -14,12 +14,12 @@ This repository contains my personal notes while studying **The Linux Foundation
 
 ---
 
-## 📚 Course List
+## 📚 [Open Source Software Development, Linux and Git Specialization](https://www.coursera.org/specializations/oss-development-linux-git#courses)
 
-1. **Open Source Software Development Methods**
-2. **Linux for Developers**
-3. **Linux Tools for Developers**
-4. **Using Git for Distributed Development**
+1. **[Open Source Software Development Methods](https://www.coursera.org/learn/open-source-software-development-methods?specialization=oss-development-linux-git)**
+2. **[Linux for Developers](https://www.coursera.org/learn/linux-for-developers?specialization=oss-development-linux-git)**
+3. **[Linux Tools for Developers](https://www.coursera.org/learn/linux-tools-for-developers?specialization=oss-development-linux-git)**
+4. **[Using Git for Distributed Development](http://coursera.org/learn/git-distributed-development?specialization=oss-development-linux-git)**
 
 ---
 
