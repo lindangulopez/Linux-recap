@@ -4,7 +4,7 @@ This repository contains my personal notes while studying **The Linux Foundation
 
 ---
 
-## 📘 What’s Inside
+## What’s Inside
 
 * Notes from all **4 courses** in the specialization
 * Key Linux commands & developer tools
@@ -14,7 +14,7 @@ This repository contains my personal notes while studying **The Linux Foundation
 
 ---
 
-## 📚 [Open Source Software Development, Linux and Git Specialization](https://www.coursera.org/specializations/oss-development-linux-git#courses)
+## [Open Source Software Development, Linux and Git Specialization](https://www.coursera.org/specializations/oss-development-linux-git#courses)
 
 1. **[Open Source Software Development Methods](https://www.coursera.org/learn/open-source-software-development-methods?specialization=oss-development-linux-git)**
 2. **[Linux for Developers](https://www.coursera.org/learn/linux-for-developers?specialization=oss-development-linux-git)**
@@ -23,13 +23,13 @@ This repository contains my personal notes while studying **The Linux Foundation
 
 ---
 
-## 🎯 Goal of This Repo
+## Goal of This Repo
 
 Keep everything I learn in one place—simple, organized, and easy to revisit.
 
 ---
 
-## 📁 Structure
+## Structure
 
 ```
 course-1-open-source-methods/
@@ -41,6 +41,6 @@ resources/
 
 ---
 
-## 🤝 Notes
+## Notes
 
 These notes are informal, personal, and always in progress. Feel free to read or reuse anything here.
