@@ -110,6 +110,42 @@ BuildRoot: /var/tmp/%{name}-buildroot
 
 ---
 
+### A spec file for package management in Linux.
+
+Dependency Information Types
+- Capabilities provided by the package: These are functions or classes that the package can offer.
+- Capabilities required by the package: This includes libraries or other packages that must be present for the package to function.
+
+Understanding Libraries
+- To check required libraries: Use the command `$ rpm -qR package`.
+- To check provided libraries: Use the command to see the soname of the library, which is not the full path name.
+
+Automatic Dependency Management
+- RPM automatically identifies dynamic libraries required by binaries using scripts (find-requires and find-provides).
+- Additional requirements can be specified in the spec file using the format: `requires: package` or `requires: package >= version`.
+
+Version Constraints
+- You can specify version constraints using operators like `>=`, `>`, `=`, `<`, and `<=` to manage package dependencies effectively.
+
+You can specify additional requirements in a spec file using the following format in the header section:
+
+- **Basic requirement**: 
+  ```
+  requires: package
+  ```
+
+- **Requirement with version**: 
+  ```
+  requires: package >= version
+  ```
+
+- **Requirement with version constraints**: 
+  ```
+  requires: package >= version-build
+  ```
+
+This allows you to define which packages must be installed for your package to function correctly, including specifying version requirements.
+
 ### **Additional Notes**
 
 * **Macros:** RPM spec files often use **macros** to simplify repetitive tasks.
