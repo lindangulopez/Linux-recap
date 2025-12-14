@@ -72,6 +72,23 @@ A **spec file** is a blueprint for creating an RPM package. It contains **packag
 
 The spec file is essential for automating the packaging process in Linux.
 
+```spec
+Summary: A great application!
+Name: my_app
+Version: 1.0
+Release: 2
+License: GPLv2
+Group: Applications/Text
+Source: ftp://ftp.myserver.com/pub/my_app/my_app-1.0.tgz
+URL: https://www.myserver.com/my_app/index.html
+Vendor: The Best Software Company
+Packager: A genius <genius@myserver.com>
+Patch0: my_app-1.0.patch0
+Patch1: my_app-1.0.patch1
+BuildRoot: /var/tmp/%{name}-buildroot
+
+```
+
 ---
 
 ### **Main Sections of an RPM Spec File**
