@@ -58,7 +58,7 @@ module-4-rust-testing-documentation-libraries/
 
 ---
 
-### **[Module 2]'https://www.coursera.org/learn/rust-fundamentals/home/module/2)** - Rust: Control Flow, Error Handling, and Functions
+### **[Module 2](https://www.coursera.org/learn/rust-fundamentals/home/module/2)** - Rust: Control Flow, Error Handling, and Functions
 
 * **Focus:** Essential concepts of control flow, error handling, and functions in Rust
 * **Learning Objectives:**
