@@ -45,7 +45,7 @@ module-4-rust-testing-documentation-libraries/
 
 ## Rust Courses Overview
 
-### Module 1 - Rust: Workflow Optimization
+### **[Module 1](https://www.coursera.org/learn/rust-fundamentals/home/module/1)** - Rust: Workflow Optimization
 
 * **Progress:** 1h 27m of videos left, 2h 20m of readings left, 1 graded assessment left
 * **Focus:** Optimize Rust development workflow using programming suggestions, Copilot prompts, and GitHub Codespaces
@@ -58,7 +58,7 @@ module-4-rust-testing-documentation-libraries/
 
 ---
 
-### Module 2 - Rust: Control Flow, Error Handling, and Functions
+### **[Module 2]'https://www.coursera.org/learn/rust-fundamentals/home/module/2)** - Rust: Control Flow, Error Handling, and Functions
 
 * **Focus:** Essential concepts of control flow, error handling, and functions in Rust
 * **Learning Objectives:**
@@ -71,7 +71,7 @@ module-4-rust-testing-documentation-libraries/
 
 ---
 
-### Module 3 - Rust: Data Structures and Types
+### **[Module 3](https://www.coursera.org/learn/rust-fundamentals/home/module/3)** - Rust: Data Structures and Types
 
 * **Focus:** Understanding structs, strings, vectors, enums, and exhaustive matches
 * **Learning Objectives:**
