@@ -1,3 +1,4 @@
 fn main() {
-    println!("Hello, rust-word!");
-}
+    println!("Hello, world!"); 
+    println!("Press i to insert");
+} 
