@@ -101,4 +101,3 @@ module-4-rust-testing-documentation-libraries/
 
 These notes are informal, personal, and always in progress. Feel free to read, reuse, or adapt anything here.
 
----
