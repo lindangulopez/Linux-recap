@@ -1,125 +1,169 @@
-# 🌍 Install QGIS on Ubuntu 20.04 (Focal)
+# 🌍 Install QGIS on Ubuntu 
 
-## 🧰 1. Install Required Tools
+This guide works for Ubuntu 20.04, 22.04, 24.04 and similar systems.
 
-```bash id="v3n8q2"
+---
+
+# 🧰 1. Install Required Tools
+
+```bash
 sudo apt update
 sudo apt install gnupg software-properties-common
 ```
 
 ---
 
-## 🔑 2. Add QGIS Signing Key
+# 🔑 2. Add QGIS Signing Key
 
-```bash id="j4r7ks"
-sudo mkdir -p /etc/apt/keyrings
+```bash
+sudo mkdir -m755 -p /etc/apt/keyrings
 sudo wget -O /etc/apt/keyrings/qgis-archive-keyring.gpg https://download.qgis.org/downloads/qgis-archive-keyring.gpg
+```
+
+👉 This ensures packages from QGIS are trusted.
+
+---
+
+# 🧠 3. Find Your System Codename (IMPORTANT)
+
+Run:
+
+```bash
+lsb_release -cs
+```
+
+👉 You’ll get something like:
+
+| Ubuntu Version | Codename |
+| -------------- | -------- |
+| 20.04          | focal    |
+| 22.04          | jammy    |
+| 24.04          | noble    |
+
+👉 **You must use this codename in the next step**
+
+---
+
+# 🗂️ 4. Add QGIS Repository
+
+Open the file:
+
+```bash
+sudo nano /etc/apt/sources.list.d/qgis.sources
 ```
 
 ---
 
-## 🗂️ 3. Add QGIS Repository (IMPORTANT)
+## ✍️ Paste this (REPLACE codename)
 
-Ubuntu 20.04 codename = **focal**
+Example for Ubuntu 24.04 (`noble`):
 
-Check it (optional):
-
-```bash id="0s9m3c"
-lsb_release -cs
-```
-
-Now create the repo file:
-
-```bash id="3e9l1a"
-sudo nano /etc/apt/sources.list.d/qgis.sources
-```
-
-Paste this:
-
-```text id="nq1y3x"
+```text
 Types: deb deb-src
 URIs: https://qgis.org/debian
-Suites: focal
+Suites: noble
 Architectures: amd64
 Components: main
 Signed-By: /etc/apt/keyrings/qgis-archive-keyring.gpg
 ```
 
-Save:
+👉 Replace `noble` with:
 
-* Ctrl + O → Enter
-* Ctrl + X
+* `focal` (20.04)
+* `jammy` (22.04)
+* or whatever your system returned
 
 ---
 
-## 🔄 4. Update Package List
+## 💾 Save and exit
 
-```bash id="k8p2zx"
+Inside nano:
+
+* Press **Ctrl + O** → Enter (save)
+* Press **Ctrl + X** (exit)
+
+---
+
+# 🔄 5. Update Package List
+
+```bash
 sudo apt update
 ```
 
 ---
 
-## 📦 5. Install QGIS
+# 📦 6. Install QGIS
 
-```bash id="g5v0md"
+```bash
 sudo apt install qgis qgis-plugin-grass
 ```
 
-Optional (server component):
+---
 
-```bash id="l2b7xy"
+## ➕ Optional: install server
+
+```bash
 sudo apt install qgis-server
 ```
 
 ---
 
-## ▶️ 6. Launch QGIS
+# ▶️ 7. Launch QGIS
 
-```bash id="o9r4yt"
+```bash
 qgis
 ```
 
 ---
 
-# ⚠️ Important Notes (Ubuntu 20.04)
+# ⚠️ Important Notes
 
-* Ubuntu 20.04 is **older (LTS)** → newer QGIS versions may not always be fully supported
-* If something breaks:
+### Ubuntu 20.04 (focal)
 
-  * Use **LTR (Long Term Release)** repository instead
-  * Or upgrade OS (recommended long-term)
+* Older system → newer QGIS (4.x) may not always work perfectly
+* If issues occur:
+
+  * Use **LTR version** (more stable)
+  * Or upgrade Ubuntu (recommended long-term)
 
 ---
 
 # 🔁 Alternative: Install QGIS LTR (More Stable)
 
-Use this repo instead of the main one:
+Instead of the main repo, use:
 
-```text id="zz4gq8"
+```text
 URIs: https://qgis.org/debian-ltr
 Suites: focal
 ```
 
-👉 LTR example: **3.44.x (Solothurn)** → more stable for production
+👉 LTR = more stable, fewer bugs (recommended for production)
 
 ---
 
-# 🔗 Connecting QGIS with Your Anaconda Setup
+# ⚡ Shortcut (no manual editing)
 
-As mentioned before:
+You can skip editing entirely:
 
-👉 **QGIS has its own Python**
-👉 Your **Anaconda** environment is separate
+```bash
+echo -e "Types: deb deb-src\nURIs: https://qgis.org/debian\nSuites: $(lsb_release -cs)\nArchitectures: amd64\nComponents: main\nSigned-By: /etc/apt/keyrings/qgis-archive-keyring.gpg" | sudo tee /etc/apt/sources.list.d/qgis.sources
+```
 
 ---
 
-## ✅ Recommended Workflow (Best Practice)
+# 🔗 Using QGIS with Anaconda
 
-Use:
+👉 Important:
 
-* Anaconda → analysis (`geopandas`, `rioxarray`)
-* QGIS → visualization
+* QGIS uses its **own Python**
+* Anaconda uses a **separate environment**
+
+---
+
+## ✅ Recommended workflow
+
+* Use Anaconda → data analysis (`geopandas`, etc.)
+* Use QGIS → visualization & GIS tools
 
 Exchange files:
 
@@ -129,48 +173,45 @@ Exchange files:
 
 ---
 
-## ⚙️ Optional (Advanced Integration)
+## ⚙️ Optional (advanced)
 
-Run QGIS inside your conda environment:
+Run QGIS inside conda:
 
-```bash id="s6k1zp"
+```bash
 conda activate python_foundation
 qgis
 ```
 
-If needed, expose packages:
+If needed:
 
-```bash id="u8w2mf"
+```bash
 export PYTHONPATH=~/anaconda3/envs/python_foundation/lib/python3.12/site-packages:$PYTHONPATH
 ```
 
-⚠️ This may cause:
+⚠️ May cause:
 
 * GDAL conflicts
-* Crashes
+* crashes
 
 ---
 
 # 🧪 Test Python in QGIS
 
-Inside QGIS:
+Inside QGIS → Python Console:
 
-* Open **Python Console**
-* Run:
-
-```python id="a1v9cx"
+```python
 import geopandas
 ```
 
 ---
 
-# 🎯 Final Setup
+# 🎯 Final Result
 
 You now have:
 
-* QGIS installed via official repo
-* GRASS plugin included
-* Anaconda Python 3.12 environment
-* A clean, professional GIS workflow
+* Latest QGIS installed from official repo
+* GRASS plugin enabled
+* Clean setup compatible with your system
+* Optional Anaconda workflow
 
 
