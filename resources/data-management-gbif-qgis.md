@@ -1,142 +1,72 @@
-# 🧱 1. Go to your project (or create it)
+# Root folder
+mkdir -p data-management && cd data-management
 
-```bash id="c1"
-cd ~/Documents/myData/data-management
-```
+# -------------------------
+# DATA LAYERS
+# -------------------------
 
----
+mkdir -p data/raw/gbif
+mkdir -p data/raw/eea/natura2000
 
-# 📁 2. Create the correct architecture
+mkdir -p data/interim/gbif
+mkdir -p data/interim/eea
 
-```bash id="c2"
-mkdir -p \
-data/raw/gbif \
-data/raw/natura2000 \
-data/raw/other_sources \
-data/interim \
-data/processed \
-\
-notebooks \
-src/config \
-src/data \
-src/processing \
-src/utils \
-\
-outputs/figures \
-outputs/maps \
-outputs/tables \
-\
-scripts \
-docs
-```
+mkdir -p data/processed/base_layers
+mkdir -p data/processed/species
+mkdir -p data/processed/groups
+mkdir -p data/processed/connectivity
 
----
+# -------------------------
+# NOTEBOOKS (pipeline)
+# -------------------------
 
-# 📦 3. THIS is where GBIF ZIPs go (important)
+mkdir -p notebooks
 
-You will put them here:
+touch notebooks/01_data_preparation.ipynb
+touch notebooks/02_gbif_processing.ipynb
+touch notebooks/03_analysis.ipynb
+touch notebooks/04_qgis_geopandas_bridge.ipynb
+touch notebooks/05_connectivity.ipynb
 
-```bash id="c3"
-data/raw/gbif/
-```
+# -------------------------
+# SOURCE CODE
+# -------------------------
 
-So for example:
+mkdir -p src/config
+mkdir -p src/io
+mkdir -p src/processing
 
-```bash id="c4"
-mv wolf.zip data/raw/gbif/
-mv Red_Deer.zip data/raw/gbif/
-mv nase.zip data/raw/gbif/
-```
+touch src/config/ecosystem.py
 
-If they are not yet downloaded, just remember this path for later.
+touch src/io/read_gpkg.py
+touch src/io/read_eea.py
+touch src/io/paths.py
 
----
+touch src/processing/clean.py
+touch src/processing/clip.py
+touch src/processing/buffer.py
+touch src/processing/aggregate.py
 
-# 📄 4. Create clean Python structure
+# -------------------------
+# QGIS PROJECT
+# -------------------------
 
-```bash id="c5"
-touch \
-src/config/paths.py \
-src/config/settings.py \
-\
-src/data/gbif.py \
-src/data/natura.py \
-src/data/io.py \
-\
-src/processing/clip.py \
-src/processing/buffer.py \
-src/processing/clean.py \
-\
-src/utils/geo.py \
-src/utils/logging.py
-```
+mkdir -p qgis/layers
+mkdir -p qgis/styles
 
----
+touch qgis/coa_connectivity.qgz
 
-# 📓 5. Create notebooks (clean workflow only)
+# -------------------------
+# OUTPUTS
+# -------------------------
 
-```bash id="c6"
-touch \
-notebooks/01_data_preparation.ipynb \
-notebooks/02_gbif_processing.ipynb \
-notebooks/03_analysis.ipynb
-```
+mkdir -p outputs/maps
+mkdir -p outputs/figures
+mkdir -p outputs/tables
 
----
+# -------------------------
+# ROOT FILES
+# -------------------------
 
-# 📜 6. Create scripts
-
-```bash id="c7"
-touch \
-scripts/run_pipeline.py \
-scripts/download_gbif.py
-```
-
----
-
-# 📚 7. Docs + repo files
-
-```bash id="c8"
-touch \
-README.md \
-docs/methodology.md \
-docs/data_sources.md \
-.gitignore
-```
-
----
-
-# 🧹 8. Add a correct `.gitignore`
-
-```bash id="c9"
-cat << 'EOF' > .gitignore
-data/raw/
-data/interim/
-outputs/
-__pycache__/
-*.pyc
-.ipynb_checkpoints/
-.DS_Store
-EOF
-```
-
----
-
-# ✅ 9. Commit clean structure
-
-```bash id="c10"
-git add .
-git commit -m "Initialize clean research architecture (GBIF + GIS pipeline)"
-```
-
----
-
-# 🚀 Summary (important rule)
-
-👉 GBIF ZIP files ALWAYS go here:
-
-```text
-data/raw/gbif/
-```
-
-
+touch README.md
+touch .gitignore
