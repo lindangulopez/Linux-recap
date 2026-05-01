@@ -1,22 +1,14 @@
-# Bash setup script
+# 🧱 1. Go to your project (or create it)
 
-> create the redesigned repository structure exactly as proposed.
-
-Run this from your repo root:
-
----
-
-# 🧱 1. Go to your repo
-
-```bash id="cd1"
+```bash id="c1"
 cd ~/Documents/myData/data-management
 ```
 
 ---
 
-# 📁 2. Create full folder structure
+# 📁 2. Create the correct architecture
 
-```bash id="mk1"
+```bash id="c2"
 mkdir -p \
 data/raw/gbif \
 data/raw/natura2000 \
@@ -40,9 +32,29 @@ docs
 
 ---
 
-# 📄 3. Create core Python modules
+# 📦 3. THIS is where GBIF ZIPs go (important)
 
-```bash id="mk2"
+You will put them here:
+
+```bash id="c3"
+data/raw/gbif/
+```
+
+So for example:
+
+```bash id="c4"
+mv wolf.zip data/raw/gbif/
+mv Red_Deer.zip data/raw/gbif/
+mv nase.zip data/raw/gbif/
+```
+
+If they are not yet downloaded, just remember this path for later.
+
+---
+
+# 📄 4. Create clean Python structure
+
+```bash id="c5"
 touch \
 src/config/paths.py \
 src/config/settings.py \
@@ -61,9 +73,9 @@ src/utils/logging.py
 
 ---
 
-# 📓 4. Create notebooks (clean workflow)
+# 📓 5. Create notebooks (clean workflow only)
 
-```bash id="mk3"
+```bash id="c6"
 touch \
 notebooks/01_data_preparation.ipynb \
 notebooks/02_gbif_processing.ipynb \
@@ -72,9 +84,9 @@ notebooks/03_analysis.ipynb
 
 ---
 
-# 📜 5. Create scripts
+# 📜 6. Create scripts
 
-```bash id="mk4"
+```bash id="c7"
 touch \
 scripts/run_pipeline.py \
 scripts/download_gbif.py
@@ -82,20 +94,21 @@ scripts/download_gbif.py
 
 ---
 
-# 📚 6. Create documentation files
+# 📚 7. Docs + repo files
 
-```bash id="mk5"
+```bash id="c8"
 touch \
 README.md \
 docs/methodology.md \
-docs/data_sources.md
+docs/data_sources.md \
+.gitignore
 ```
 
 ---
 
-# 🧹 7. Add basic `.gitignore`
+# 🧹 8. Add a correct `.gitignore`
 
-```bash id="mk6"
+```bash id="c9"
 cat << 'EOF' > .gitignore
 data/raw/
 data/interim/
@@ -109,32 +122,21 @@ EOF
 
 ---
 
-# ✅ 8. Stage everything
+# ✅ 9. Commit clean structure
 
-```bash id="mk7"
+```bash id="c10"
 git add .
+git commit -m "Initialize clean research architecture (GBIF + GIS pipeline)"
 ```
 
 ---
 
-# 💾 9. Commit structure
+# 🚀 Summary (important rule)
 
-```bash id="mk8"
-git commit -m "Initialize clean project structure for GBIF + GIS workflow"
+👉 GBIF ZIP files ALWAYS go here:
+
+```text
+data/raw/gbif/
 ```
 
----
 
-# 🚀 Optional (if ready)
-
-```bash id="mk9"
-git push
-```
-
----
-
-If you want next step, I can:
-
-* convert your current notebook into modular Python (`src/`)
-* or build a simple `run_pipeline.py` that executes everything automatically
-* or help you cleanly migrate your existing GBIF data into `data/raw/` without breaking anything
