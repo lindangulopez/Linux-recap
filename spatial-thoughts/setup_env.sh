@@ -94,6 +94,16 @@ section "Installing R packages (this takes a few minutes)"
 $RUN Rscript - <<EOF
 options(repos = c(CRAN = "${CRAN_MIRROR}"))
 
+# ── Step 3a: IRkernel dependencies first (explicit, never skipped) ───────────
+irkernel_deps <- c("repr", "IRdisplay", "IRkernel", "uuid", "digest", "jsonlite", "crayon")
+for (p in irkernel_deps) {
+  if (!requireNamespace(p, quietly = TRUE)) {
+    cat("Installing IRkernel dep:", p, "\n")
+    install.packages(p, quiet = FALSE)
+  }
+}
+
+# ── Step 3b: All other project packages ──────────────────────────────────────
 pkgs <- c(
   # GBIF
   "rgbif",
@@ -114,23 +124,23 @@ pkgs <- c(
   # Spatial QA
   "CoordinateCleaner",
   # Visualisation
-  "ggplot2",
-  # Jupyter / IRkernel
-  "IRkernel"
+  "ggplot2"
 )
 
 missing <- pkgs[!pkgs %in% rownames(installed.packages())]
-
 if (length(missing) == 0) {
-  cat("All R packages already installed.\n")
+  cat("All project R packages already installed.\n")
 } else {
   cat("Installing:", paste(missing, collapse = ", "), "\n")
-  install.packages(missing, quiet = TRUE)
+  install.packages(missing, quiet = FALSE)
 }
 
-# Register R kernel with the Jupyter in this environment
-IRkernel::installspec(name = "ir", displayname = "R ${R_VERSION}")
-cat("IRkernel registered.\n")
+# ── Step 3c: Register R kernel ───────────────────────────────────────────────
+if (!requireNamespace("IRkernel", quietly = TRUE)) {
+  stop("IRkernel failed to install — check CRAN mirror and internet connection.")
+}
+IRkernel::installspec(user = TRUE, name = "ir", displayname = "R ${R_VERSION}")
+cat("IRkernel registered successfully.\n")
 EOF
 
 info "R packages installed and IRkernel registered."
@@ -148,29 +158,40 @@ else
   if ! command -v juliaup &>/dev/null; then
     info "Installing juliaup …"
     curl -fsSL https://install.julialang.org | sh -s -- --yes
+    # juliaup installs to ~/.juliaup/bin — add to PATH for this session
     export PATH="$HOME/.juliaup/bin:$PATH"
+    # Persist across future shells
+    if ! grep -q '\.juliaup/bin' "$HOME/.bashrc" 2>/dev/null; then
+      echo 'export PATH="$HOME/.juliaup/bin:$PATH"' >> "$HOME/.bashrc"
+      info "Added ~/.juliaup/bin to ~/.bashrc"
+    fi
   fi
   juliaup add "${JULIA_VERSION}"
   juliaup default "${JULIA_VERSION}"
-  JULIA_BIN="julia"
+  # juliaup symlinks julia into ~/.juliaup/bin
+  export PATH="$HOME/.juliaup/bin:$PATH"
+  JULIA_BIN="$(command -v julia || echo "$HOME/.juliaup/bin/julia")"
   info "Julia installed: $($JULIA_BIN --version)"
 fi
 
-section "Installing Omniscape.jl"
+section "Installing Omniscape.jl + IJulia kernel"
 
-$JULIA_BIN --project=@. -e '
+$JULIA_BIN -e '
   using Pkg
-  pkgs = ["Omniscape", "Rasters", "ArchGDAL"]
+  pkgs = ["Omniscape", "Rasters", "ArchGDAL", "IJulia"]
   for p in pkgs
-    if !haskey(Pkg.project().dependencies, p)
+    if Base.find_package(p) === nothing
       Pkg.add(p)
     end
   end
   Pkg.instantiate()
-  println("Omniscape.jl ready: ", pkgs)
+  # Register Julia kernel with the Jupyter inside the conda env
+  using IJulia
+  installkernel("Julia")
+  println("Omniscape.jl + IJulia ready")
 '
 
-info "Omniscape.jl installed."
+info "Omniscape.jl installed and Julia kernel registered."
 
 # ── 5. Write .env ─────────────────────────────────────────────────────────────
 section "Writing .env"
@@ -268,13 +289,68 @@ echo ""
 info "Julia / Omniscape check:"
 $JULIA_BIN -e 'using Omniscape; println("  Omniscape.jl OK")'
 
+# ── 8. Kernel repair (run automatically; also callable manually) ──────────────
+# If kernels are missing after setup — e.g. because the script was run
+# before Julia was on PATH — source this file and call: repair_kernels
+repair_kernels() {
+  section "Repairing / re-registering Jupyter kernels"
+
+  # ── R kernel ────────────────────────────────────────────────────────────────
+  info "Installing IRkernel package + registering R kernel …"
+  conda run -n "${ENV_NAME}" --no-capture-output \
+    Rscript -e "
+      options(repos = c(CRAN = '${CRAN_MIRROR}'))
+      deps <- c('repr', 'IRdisplay', 'IRkernel', 'uuid', 'digest', 'jsonlite', 'crayon')
+      for (p in deps) {
+        if (!requireNamespace(p, quietly = TRUE)) install.packages(p)
+      }
+      IRkernel::installspec(user = TRUE, name = 'ir', displayname = 'R')
+      cat('R kernel registered.\n')
+    "
+  info "R kernel registered."
+
+  # ── Julia kernel ────────────────────────────────────────────────────────────
+  JULIA_BIN_LOCAL="$(command -v julia || echo "$HOME/.juliaup/bin/julia")"
+  if [[ -x "$JULIA_BIN_LOCAL" ]]; then
+    info "Re-registering IJulia kernel …"
+    "$JULIA_BIN_LOCAL" -e '
+      using Pkg
+      Base.find_package("IJulia") === nothing && Pkg.add("IJulia")
+      using IJulia
+      installkernel("Julia")
+      println("Julia kernel registered.")
+    '
+    info "Julia kernel registered."
+  else
+    warn "julia not found on PATH — skipping Julia kernel registration."
+    warn "After installing Julia, run:  julia -e 'using IJulia; installkernel(\"Julia\")'"
+  fi
+
+  info "Current kernels:"
+  conda run -n "${ENV_NAME}" --no-capture-output jupyter kernelspec list
+}
+
+# Run repair automatically at end of setup to catch any PATH timing issues
+repair_kernels
+
 # ── Done ──────────────────────────────────────────────────────────────────────
 section "Setup complete"
 echo ""
-echo -e "  Activate environment : ${YELLOW}conda activate ${ENV_NAME}${NC}"
-echo -e "  Launch JupyterLab    : ${YELLOW}jupyter lab${NC}"
-echo -e "  Open notebook        : ${YELLOW}notebooks/02_gbif_processing.ipynb${NC}"
-echo -e "  Switch kernel to     : ${YELLOW}R${NC}  (top-right kernel picker)"
+echo -e "  Activate environment  : ${YELLOW}conda activate ${ENV_NAME}${NC}"
+echo -e "  Launch JupyterLab     : ${YELLOW}jupyter lab${NC}"
+echo -e "  Open notebook         : ${YELLOW}notebooks/02_gbif_processing.ipynb${NC}"
+echo -e "  Switch kernel (R)     : top-right kernel picker → R"
+echo -e "  Switch kernel (Julia) : top-right kernel picker → Julia"
 echo ""
 echo -e "  Fill in ${YELLOW}.env${NC} with your GBIF credentials before running the notebook."
+echo ""
+echo -e "${YELLOW}══ If kernels are still missing ══${NC}"
+echo -e "  Run these three commands manually:"
+echo ""
+echo -e "  ${YELLOW}conda activate ${ENV_NAME}${NC}"
+echo -e "  ${YELLOW}Rscript -e 'IRkernel::installspec(user = TRUE)'${NC}"
+echo -e "  ${YELLOW}julia -e 'using IJulia; installkernel(\"Julia\")'${NC}"
+echo -e "  ${YELLOW}jupyter kernelspec list${NC}   ← verify ir + julia appear"
+echo ""
+echo -e "  Then relaunch: ${YELLOW}jupyter lab${NC}"
 echo ""
