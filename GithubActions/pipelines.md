@@ -117,5 +117,3 @@ jobs:
 4. Commit to `main`
 
 > **Note:** For the SLSA workflow, replace `make build` and `your-artifact` with your actual build command and output file. For Django/Conda, make sure `requirements.txt` exists at the repo root.
-
-Want me to tailor any of these to your specific project structure?
