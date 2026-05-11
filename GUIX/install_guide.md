@@ -1,45 +1,18 @@
-# GNU Guix Installation Guide for Ubuntu 24.04
+# GNU Guix on Ubuntu 24.04 — Clean Install + Full Environment Setup
 
-This guide explains how to install and test **GNU Guix** on **Ubuntu 24.04 LTS** using the official binary installer.
+Real working environments for:
 
-It includes:
+* PostgreSQL
+* Julia
+* R
+* Python + Jupyter (`ipynb`)
+* GIS stack
+* QGIS
 
-- Required dependencies
-- Installation steps
-- Common fixes
-- Verification tests
-- First package installation
-- Updating Guix
-- Uninstall instructions
+All on Ubuntu 24.04 + GNU Guix.
 
----
 
-# What is GNU Guix?
-
-GNU Guix is a:
-
-- Functional package manager
-- Reproducible development environment system
-- GNU/Linux distribution
-
-Guix allows:
-
-- Declarative environments
-- Rollbacks
-- Isolated package management
-- Reproducible scientific workflows
-
-Official website:
-
-https://guix.gnu.org/
-
----
-
-# Requirements
-
-Ubuntu 24.04 requires several dependencies before installing Guix.
-
-Install them with:
+## 1. Install Dependencies (Ubuntu)
 
 ```bash
 sudo apt update
@@ -47,145 +20,42 @@ sudo apt update
 sudo apt install -y \
   bash \
   gnupg \
-  tar \
   wget \
+  curl \
+  tar \
   xz-utils \
   uidmap
 ```
 
----
+## 2. Download and Install Guix
 
-# Why `uidmap` Is Required
+```bash
+cd /tmp
 
-The Guix installer needs:
+wget https://guix.gnu.org/guix-install.sh
+chmod +x guix-install.sh
 
-```text
-newgidmap
-newuidmap
+sudo ./guix-install.sh
 ```
 
-These commands come from the Ubuntu package:
-
-```text
-uidmap
-```
-
-Without it, installation fails with:
-
-```text
-[ FAIL ] Missing commands: newgidmap.
-```
-
----
-
-# Verify Dependencies
+## 3. Activate Guix (IMPORTANT STEP YOU MISSED)
 
 Run:
 
 ```bash
-which bash
-which gpg
-which tar
-which wget
-which xz
-which newgidmap
-which newuidmap
+GUIX_PROFILE="$HOME/.guix-profile"
+. "$GUIX_PROFILE/etc/profile"
+unset GUIX_PROFILE
 ```
 
-Expected output:
-
-```text
-/usr/bin/bash
-/usr/bin/gpg
-/usr/bin/tar
-/usr/bin/wget
-/usr/bin/xz
-/usr/bin/newgidmap
-/usr/bin/newuidmap
-```
-
----
-
-# Download the Installer
-
-Move into the temporary directory:
+Make it permanent:
 
 ```bash
-cd /tmp
+echo 'GUIX_PROFILE="$HOME/.guix-profile"; . "$GUIX_PROFILE/etc/profile"; unset GUIX_PROFILE' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-Verify location:
-
-```bash
-pwd
-```
-
-Expected:
-
-```text
-/tmp
-```
-
-Download the installer:
-
-```bash
-wget https://guix.gnu.org/guix-install.sh
-```
-
-Make it executable:
-
-```bash
-chmod +x guix-install.sh
-```
-
-Verify:
-
-```bash
-ls -lh guix-install.sh
-```
-
----
-
-# Run the Installer
-
-Run as root:
-
-```bash
-sudo ./guix-install.sh
-```
-
-The installer will:
-
-1. Download the Guix binary tarball
-2. Install Guix
-3. Configure the Guix daemon
-4. Create required users/groups
-5. Configure substitute servers
-6. Enable Guix for non-root users
-
----
-
-# During Installation
-
-You may see:
-
-```text
-Press return to continue...
-```
-
-Press:
-
-```text
-Enter
-```
-
-The installer can take several minutes.
-
----
-
-# Verify Installation
-
-After installation completes:
+## 4. Verify Installation
 
 ```bash
 guix --version
@@ -197,348 +67,246 @@ Expected:
 guix (GNU Guix) 1.x.x
 ```
 
----
+## 5. FIRST TEST (VERY IMPORTANT)
 
-# Configure Your Shell
-
-Add Guix to your environment:
-
-```bash
-source ~/.config/guix/current/etc/profile
-```
-
-To make it permanent:
-
-```bash
-echo 'source ~/.config/guix/current/etc/profile' >> ~/.bashrc
-```
-
-Reload shell:
-
-```bash
-source ~/.bashrc
-```
-
----
-
-# Test Guix
-
-## Search for a package
-
-```bash
-guix search hello
-```
-
----
-
-## Install a package
+Install and test Hello:
 
 ```bash
 guix install hello
-```
-
----
-
-## Run the package
-
-```bash
 hello
 ```
 
-Expected:
+Expected output:
 
 ```text
 Hello, world!
 ```
 
----
+If this works → Guix is correctly installed and activated.
 
-# Test Installed Packages
+## 6. FIXED WORKFLOW (Recommended)
 
-List installed packages:
-
-```bash
-guix package --list-installed
-```
-
----
-
-# Test the Daemon
-
-Ubuntu 24.04 uses systemd.
-
-Check daemon status:
+Instead of `guix install`, prefer isolated environments:
 
 ```bash
-systemctl status guix-daemon
+guix shell hello
+hello
 ```
+# 7. Core Science + Dev Environments
 
-Expected:
+Now we build proper reproducible environments.
 
-```text
-active (running)
-```
-
----
-
-# Test Pulling Updates
-
-Update Guix:
+# 🐘 PostgreSQL Environment
 
 ```bash
-guix pull
+guix shell postgresql
 ```
 
-Refresh shell hash:
+Test:
 
 ```bash
-hash guix
+psql --version
+```
+
+Optional Python bridge:
+
+```bash
+guix shell postgresql python python-psycopg2
 ```
 
 ---
 
-# Authorize Substitute Servers
+# 🐍 Python + Jupyter (ipynb)
 
-Guix downloads pre-built binaries called substitutes.
-
-Authorize official servers:
+## Basic Python + Jupyter
 
 ```bash
-sudo guix archive --authorize < \
-  ~root/.config/guix/current/share/guix/bordeaux.guix.gnu.org.pub
-
-sudo guix archive --authorize < \
-  ~root/.config/guix/current/share/guix/ci.guix.gnu.org.pub
+guix shell python python-jupyter python-ipython python-numpy python-pandas
 ```
 
-Without substitutes, Guix compiles everything from source.
+Start notebook:
+
+```bash
+jupyter notebook
+```
+
+or:
+
+```bash
+jupyter lab
+```
 
 ---
 
-# Create a Development Environment
-
-Example temporary environment:
-
-```bash
-guix shell python python-pandas python-geopandas
-```
-
-This launches an isolated shell with GIS tooling.
-
----
-
-# Example Scientific Environment
+# 🌍 GIS Stack (Python GIS)
 
 ```bash
 guix shell \
-  python \
-  python-numpy \
-  python-scipy \
-  python-pandas \
-  python-matplotlib \
-  python-jupyter
-```
-
----
-
-# Example PostgreSQL Environment
-
-```bash
-guix shell \
-  postgresql \
-  python \
-  python-psycopg2
-```
-
----
-
-# Common Commands
-
-## Search
-
-```bash
-guix search geopandas
-```
-
----
-
-## Install
-
-```bash
-guix install python python-geopandas
-```
-
----
-
-## Remove
-
-```bash
-guix remove python-geopandas
-```
-
----
-
-## Upgrade Packages
-
-```bash
-guix upgrade
-```
-
----
-
-## Roll Back
-
-```bash
-guix package --roll-back
-```
-
----
-
-# Common Errors
-
----
-
-## Error: `newgidmap missing`
-
-Fix:
-
-```bash
-sudo apt install uidmap
-```
-
----
-
-## Error: `guix command not found`
-
-Fix:
-
-```bash
-source ~/.config/guix/current/etc/profile
-```
-
----
-
-## Error: daemon not running
-
-Start daemon:
-
-```bash
-sudo systemctl start guix-daemon
-```
-
-Enable at boot:
-
-```bash
-sudo systemctl enable guix-daemon
-```
-
----
-
-# Uninstall Guix
-
-Go back to installer directory:
-
-```bash
-cd /tmp
-```
-
-Run:
-
-```bash
-sudo ./guix-install.sh --uninstall
-```
-
-Warning:
-
-This permanently removes:
-
-- Guix packages
-- Profiles
-- Configuration
-- Build caches
-- Daemon services
-
----
-
-# Recommended Next Steps
-
-For scientific and GIS workflows:
-
-Install:
-
-```bash
-guix install \
   python \
   python-geopandas \
-  python-rasterio \
   python-shapely \
-  python-jupyter
+  python-fiona \
+  python-rasterio \
+  python-matplotlib
 ```
 
-For biodiversity workflows:
+Test:
 
 ```bash
-guix search qgis
-guix search postgresql
-guix search gdal
+python -c "import geopandas as gpd; print(gpd.__version__)"
 ```
 
 ---
 
-# Useful Resources
-
-## Official Documentation
-
-https://guix.gnu.org/manual/
-
----
-
-## Getting Started
-
-https://guix.gnu.org/manual/en/html_node/Getting-Started.html
-
----
-
-## Package Search
-
-https://packages.guix.gnu.org/
-
----
-
-## Guix Source Code
-
-https://git.savannah.gnu.org/cgit/guix.git
-
----
-
-# Recommended Ubuntu 24.04 Packages
-
-Useful host-system tools:
+# 🗺️ QGIS Environment
 
 ```bash
-sudo apt install -y \
-  git \
-  curl \
-  build-essential \
-  htop \
-  tmux \
-  tree \
-  jq
+guix shell qgis
 ```
 
----
-
-# Final Verification Checklist
+Launch:
 
 ```bash
-guix --version
-guix search hello
-guix install hello
-hello
-systemctl status guix-daemon
-guix pull
+qgis
 ```
 
-If all commands succeed, Guix is fully operational.
+If GUI fails, ensure:
+
+```bash
+echo $DISPLAY
+```
 
 ---
+
+# 📊 R Environment
+
+```bash
+guix shell r r-ggplot2 r-dplyr r-tidyr
+```
+
+Start R:
+
+```bash
+R
+```
+
+Test:
+
+```r
+ggplot2::ggplot()
+```
+
+---
+
+# 🧬 Julia Environment
+
+```bash
+guix shell julia
+```
+
+Start:
+
+```bash
+julia
+```
+
+Test:
+
+```julia
+println("Hello Julia")
+```
+
+---
+
+# 🧪 Combined Data Science Stack
+
+This is a powerful reproducible environment:
+
+```bash
+guix shell \
+  python python-jupyter python-numpy python-pandas python-matplotlib \
+  r r-ggplot2 \
+  julia \
+  postgresql
+```
+
+---
+
+# 🧠 Recommended Workflow Model
+
+## Option A (temporary environments — BEST)
+
+```bash
+guix shell python python-jupyter
+```
+
+## Option B (installed profile — older style)
+
+```bash
+guix install python
+```
+
+⚠️ Avoid heavy use of `guix install` for science stacks.
+
+---
+
+# 🔥 Common Fixes
+
+## “command not found (hello, python, etc.)”
+
+Fix:
+
+```bash
+. ~/.guix-profile/etc/profile
+```
+
+---
+
+## GUI apps not opening (QGIS)
+
+Check:
+
+```bash
+echo $DISPLAY
+```
+
+If empty, you are in non-GUI session.
+
+---
+
+## Substitutes slow
+
+This is normal first time; later Guix caches binaries.
+
+---
+
+# 🚀 Recommended Final Setup
+
+Add this to `.bashrc` (if not already):
+
+```bash
+GUIX_PROFILE="$HOME/.guix-profile"
+. "$GUIX_PROFILE/etc/profile"
+unset GUIX_PROFILE
+```
+
+---
+
+# 🧭 What You Now Have
+
+With this setup you can:
+
+* Run reproducible Python GIS pipelines
+* Use QGIS + Python together
+* Run Jupyter notebooks
+* Work with R statistical stacks
+* Use Julia for scientific computing
+* Run PostgreSQL locally for spatial databases
+
+---
+
+If you want next step, I can upgrade this into:
+
+* 🔥 full **GeoData Science stack (PostGIS + QGIS + Python bridge)**
+* 🚀 **reproducible research project template (Guix manifest.scm)**
+* 🧪 or **multi-language notebook setup (Python + R + Julia in Jupyter)**
