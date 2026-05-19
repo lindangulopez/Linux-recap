@@ -1,5 +1,7 @@
 Guix propagated dependency conflict.
 
+> git clone git@github.com:coa-connectivity-lab/eco-connectivity-workflow.git
+
 Jupyter already pulls its own compatible version of `python-ipykernel` through `python-qtconsole`.
 
 You added another newer `python-ipykernel` manually:
