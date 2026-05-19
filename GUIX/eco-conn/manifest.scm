@@ -1,13 +1,33 @@
-# Manifest should work with:
+Guix propagated dependency conflict.
 
-```scheme id="skgmvt"
+Jupyter already pulls its own compatible version of `python-ipykernel` through `python-qtconsole`.
+
+You added another newer `python-ipykernel` manually:
+
+* `jupyter` wants:
+
+  * `python-ipykernel@6.29.5`
+* your manifest requests:
+
+  * `python-ipykernel@7.1.0`
+
+Guix refuses because both would install conflicting files into the same profile.
+
+Remove this line from your manifest:
+
+```scheme id="rv7iw3"
+"python-ipykernel"
+```
+
+Your manifest should become:
+
+```scheme id="s7l7ni"
 (specifications->manifest
  (list
 
   ;; Python
   "python"
   "python-pip"
-  "python-ipykernel"
 
   ;; Jupyter
   "jupyter"
@@ -48,56 +68,71 @@
   "postgis"))
 ```
 
-Then:
+Then run:
 
-```bash id="ln8ks4"
+```bash id="9r5jz6"
+guix package -m manifest.scm
+```
+
+or better (ephemeral/reproducible):
+
+```bash id="m4o4we"
 guix shell -m manifest.scm
 ```
 
-Inside the shell, check what commands exist:
+---
 
-```bash id="2u6j7w"
-which jupyter
-```
+Then inside the shell:
 
-Then try:
-
-```bash id="67s4gm"
+```bash id="4v38y6"
 jupyter notebook
 ```
 
-and:
+or try:
 
-```bash id="7mbt1f"
+```bash id="s9hptn"
 jupyter lab
 ```
 
-If `jupyter lab` fails but notebook works, your Guix revision bundles only classic notebook UI.
+---
+
+Then register kernels.
+
+# R
+
+```bash id="iq4je6"
+R
+```
+
+```r id="vxx8dw"
+IRkernel::installspec()
+```
+
+# Julia
+
+```bash id="5y8o7q"
+julia
+```
+
+```julia id="khv6kc"
+using Pkg
+Pkg.add("IJulia")
+using IJulia
+installkernel("Julia")
+```
 
 ---
 
-You can also inspect available packages:
+Verify:
 
-```bash id="g9m2wi"
-guix search jupyter
+```bash id="zyz6h0"
+jupyter kernelspec list
 ```
 
-This will show the exact package names available in your channels.
+You should then have:
 
----
-
-I also strongly recommend updating your Guix channels before building scientific environments:
-
-```bash id="n9b9cz"
-guix pull
+```text id="q4p1dc"
+python3
+ir
+julia-*
 ```
-
-Then restart your shell:
-
-```bash id="9ljy93"
-hash guix
-```
-
-or log out/in.
-
-Older Guix revisions often lack newer notebook package splits.
