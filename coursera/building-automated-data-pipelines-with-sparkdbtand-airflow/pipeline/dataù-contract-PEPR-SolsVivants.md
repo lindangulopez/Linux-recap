@@ -203,6 +203,3 @@ schema_evolution:
 Tu peux conclure avec cette idée forte :
 
 > Un data contract ne décrit pas seulement la forme des données, mais constitue un engagement formel sur leur structure, leur signification, leur qualité et leur évolution. C’est ce qui transforme un pipeline modulaire en infrastructure robuste, capable de survivre à l’évolution des schémas sans casser la reproductibilité scientifique.
-
-* ou une version **spécifique AI-RAG / knowledge graph contract**
-* ou encore un **exemple de migration réelle v1 → v2 (très apprécié en entretien)**
