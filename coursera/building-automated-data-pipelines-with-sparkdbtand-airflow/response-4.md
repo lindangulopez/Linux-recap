@@ -4,6 +4,8 @@ All data should land in a centralized Amazon S3 staging area and be organized us
 
 ## Recommended S3 Organization
 
+```txt
+
 ├── Bronze (Raw Data)
 │   ├── postgresql/
 │   │   └── customer_data/
@@ -21,6 +23,8 @@ All data should land in a centralized Amazon S3 staging area and be organized us
     ├── customer_360/
     ├── marketing_segments/
     └── business_reports/
+```
+
 
 ### Organization Principles
 
