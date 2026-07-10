@@ -72,3 +72,86 @@ Monitor:
 ```
 
 The key indicator is usually **consumer lag**: if lag continues increasing while new events are being produced, the connector is not processing data fast enough or has stopped entirely.
+
+When a pricing REST API rate-limits requests, the connector may receive responses such as **HTTP 429 (Too Many Requests)**. If not handled properly, data freshness will decrease, sync jobs may fail, and the API provider could temporarily block access.
+
+### What Happens During Rate Limiting
+
+* API requests are rejected or delayed.
+* Pricing data may become stale in the staging area.
+* Repeated retries without control can increase the problem.
+* Scheduled sync jobs may fail or overlap with the next run.
+
+### Connector Design for Graceful Handling
+
+**1. Implement exponential backoff retries**
+
+* Wait progressively longer between retry attempts.
+
+Example:
+
+```
+Retry 1: Wait 30 seconds
+Retry 2: Wait 2 minutes
+Retry 3: Wait 10 minutes
+```
+
+This prevents overwhelming the API.
+
+**2. Respect API rate-limit headers**
+
+* Monitor headers such as:
+
+  * Remaining request quota
+  * Retry-after duration
+  * Reset time
+
+The connector should adjust its request rate automatically.
+
+**3. Use pagination efficiently**
+
+* Retrieve data in manageable batches.
+* Avoid requesting unnecessary records.
+* Store the last successful page/checkpoint so processing can resume.
+
+**4. Schedule intelligently**
+
+* Avoid running large sync jobs during peak API usage periods.
+* Use hourly syncs or incremental updates instead of frequent full refreshes.
+
+**5. Add monitoring and alerts**
+Track:
+
+* Number of API failures
+* Rate-limit events
+* Sync delays
+* Data freshness
+
+Alert when pricing data becomes outdated beyond an acceptable threshold.
+
+**6. Cache or stage previously retrieved data**
+
+* Keep the last successful pricing snapshot.
+* Continue serving valid data while waiting for the API limit to reset.
+
+### Example Flow
+
+```text
+REST API
+    |
+    ↓
+Connector checks rate limits
+    |
+    ├── Available quota → Fetch data
+    |
+    └── Rate limited → Wait + Retry with backoff
+                         |
+                         ↓
+                  Resume from checkpoint
+                         |
+                         ↓
+                    S3 Bronze Layer
+```
+
+The goal is to make the connector **resilient rather than aggressive**: respect the API provider’s limits, avoid unnecessary failures, and ensure GlobalRetail Corp continues receiving reliable pricing data even during periods of high API usage.
+
