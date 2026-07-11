@@ -3,7 +3,7 @@
 This guide installs and configures:
 
 * **PostgreSQL 16** — database server
-* **PostGIS 3** — spatial vector support
+* **PostGIS 3.4** — spatial vector support
 * **PostGIS Raster** — raster storage and analysis
 * **GDAL tools** — raster/vector import and export
 * **pgAdmin 4** — graphical database administration
@@ -57,7 +57,7 @@ Enable PostgreSQL at startup:
 sudo systemctl enable postgresql
 ```
 
-Check the version:
+Check version:
 
 ```bash
 psql --version
@@ -66,7 +66,7 @@ psql --version
 Example:
 
 ```
-psql (PostgreSQL) 16.x
+psql (PostgreSQL) 16.14
 ```
 
 ---
@@ -85,13 +85,11 @@ For PostgreSQL 16:
 sudo apt install postgresql-16-postgis-3 -y
 ```
 
-If it says:
+Example result:
 
 ```
 postgresql-16-postgis-3 is already the newest version
 ```
-
-then PostGIS is already installed.
 
 Restart PostgreSQL:
 
@@ -101,23 +99,84 @@ sudo systemctl restart postgresql
 
 ---
 
-# 4. Create the GIS Database User
+# 4. Configure Password Authentication
 
-Ubuntu uses **peer authentication**, so administrative PostgreSQL commands must be run as the Linux `postgres` user.
+Ubuntu PostgreSQL defaults to **peer authentication**.
 
-Switch to the PostgreSQL administrator:
+This means:
 
-```bash
-sudo -u postgres -i
+```
+Linux user = PostgreSQL user
 ```
 
-Open PostgreSQL:
+For example:
 
-```bash
-psql
+```
+Linux user: linda
+PostgreSQL user: gisuser
 ```
 
-Create your GIS user:
+will fail.
+
+Edit:
+
+```bash
+sudo nano /etc/postgresql/16/main/pg_hba.conf
+```
+
+Find:
+
+```
+local   all             all                                     peer
+```
+
+Change to:
+
+```
+local   all             all                                     scram-sha-256
+```
+
+Keep:
+
+```
+local   all             postgres                                peer
+```
+
+The final section should look like:
+
+```
+local   all             postgres                                peer
+local   all             all                                     scram-sha-256
+
+host    all             all             127.0.0.1/32            scram-sha-256
+host    all             all             ::1/128                 scram-sha-256
+```
+
+Save:
+
+```
+CTRL + O
+ENTER
+CTRL + X
+```
+
+Restart:
+
+```bash
+sudo systemctl restart postgresql
+```
+
+---
+
+# 5. Create the GIS Database User
+
+Enter PostgreSQL as administrator:
+
+```bash
+sudo -u postgres psql
+```
+
+Create GIS user:
 
 ```sql
 CREATE USER gisuser WITH PASSWORD 'choose_a_strong_password';
@@ -129,41 +188,35 @@ Allow database creation:
 ALTER USER gisuser CREATEDB;
 ```
 
-Check users:
+Check:
 
 ```sql
 \du
 ```
 
-Exit PostgreSQL:
+Exit:
 
 ```sql
 \q
 ```
 
-Return to your normal Linux user:
-
-```bash
-exit
-```
-
 ---
 
-# 5. Create the GIS Database
+# 6. Create the GIS Database
 
-Create the database using the PostgreSQL administrator:
+Create database:
 
 ```bash
 sudo -u postgres createdb gis_database
 ```
 
-Set ownership to your GIS user:
+Set ownership:
 
 ```bash
 sudo -u postgres psql
 ```
 
-Inside PostgreSQL:
+Run:
 
 ```sql
 ALTER DATABASE gis_database OWNER TO gisuser;
@@ -177,55 +230,118 @@ Exit:
 
 ---
 
-# 6. Enable PostGIS Extensions
+# 7. Enable PostGIS Extensions
 
-Connect using your GIS user:
+Important:
+
+**Extensions must be created by the PostgreSQL administrator.**
+
+Connect:
 
 ```bash
-psql -U gisuser -d gis_database -W
+sudo -u postgres psql -d gis_database
 ```
 
-Enable extensions:
+Enable PostGIS:
 
 ```sql
 CREATE EXTENSION postgis;
+```
+
+Enable topology:
+
+```sql
 CREATE EXTENSION postgis_topology;
+```
+
+Enable raster:
+
+```sql
 CREATE EXTENSION postgis_raster;
 ```
 
-Check PostGIS:
+Expected:
+
+```
+CREATE EXTENSION
+```
+
+---
+
+# 8. Verify PostGIS Installation
+
+Run:
 
 ```sql
 SELECT postgis_full_version();
 ```
 
-Expected output contains:
+Expected:
 
 ```
-POSTGIS="3.x.x"
-GEOS
-PROJ
-GDAL
+POSTGIS="3.4.2"
+PGSQL="160"
+GEOS="3.12.1"
+PROJ="9.4.0"
+GDAL="3.8.4"
+TOPOLOGY
 RASTER
 ```
 
-Check raster support:
+Check extensions:
+
+```sql
+\dx
+```
+
+Expected:
+
+```
+Name              Version
+--------------------------------
+plpgsql           1.0
+postgis           3.4.2
+postgis_raster    3.4.2
+postgis_topology  3.4.2
+```
+
+Test raster:
 
 ```sql
 SELECT postgis_raster_lib_version();
 ```
 
-Exit:
+Expected:
 
-```sql
-\q
+```
+3.4.2 c19ce56
 ```
 
 ---
 
-# 7. Install GDAL GIS Tools
+# 9. Test Spatial Functions
 
-Install GDAL:
+Geometry test:
+
+```sql
+SELECT ST_AsText(
+ST_SetSRID(ST_Point(2.3522,48.8566),4326)
+);
+```
+
+Result:
+
+```
+POINT(2.3522 48.8566)
+```
+
+This confirms spatial SQL is working.
+
+---
+
+# 10. Install GDAL GIS Tools
+
+Install:
 
 ```bash
 sudo apt install gdal-bin python3-gdal -y
@@ -240,7 +356,7 @@ gdalinfo --version
 Example:
 
 ```
-GDAL 3.x.x
+GDAL 3.8.4
 ```
 
 Check raster import:
@@ -251,9 +367,9 @@ raster2pgsql -G
 
 ---
 
-# 8. Install pgAdmin 4
+# 11. Install pgAdmin 4
 
-Add pgAdmin repository key:
+Add repository key:
 
 ```bash
 curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | \
@@ -267,7 +383,7 @@ echo "deb [signed-by=/usr/share/keyrings/packages-pgadmin-org.gpg] https://ftp.p
 sudo tee /etc/apt/sources.list.d/pgadmin4.list
 ```
 
-Install pgAdmin desktop:
+Install:
 
 ```bash
 sudo apt update
@@ -282,9 +398,9 @@ pgadmin4
 
 ---
 
-# 9. Connect pgAdmin 4
+# 12. Configure pgAdmin
 
-Open:
+Register server:
 
 ```
 Servers
@@ -314,10 +430,10 @@ Port:
 5432
 ```
 
-Maintenance database:
+Database:
 
 ```
-postgres
+gis_database
 ```
 
 Username:
@@ -334,147 +450,9 @@ your_password
 
 Save.
 
-You should see:
-
-```
-Servers
- └── Local GIS PostgreSQL
-      └── Databases
-           └── gis_database
-```
-
 ---
 
-# 10. PostgreSQL Performance Tuning for GIS
-
-Edit configuration:
-
-```bash
-sudo nano /etc/postgresql/16/main/postgresql.conf
-```
-
-For a workstation with 16GB+ RAM:
-
-Set:
-
-```
-shared_buffers = 2GB
-```
-
-Set:
-
-```
-work_mem = 64MB
-```
-
-Set:
-
-```
-maintenance_work_mem = 512MB
-```
-
-Save:
-
-```
-CTRL + O
-ENTER
-CTRL + X
-```
-
-Restart:
-
-```bash
-sudo systemctl restart postgresql
-```
-
----
-
-# 11. Test PostGIS
-
-Connect:
-
-```bash
-psql -U gisuser -d gis_database -W
-```
-
-Test geometry:
-
-```sql
-SELECT ST_AsText(
-ST_SetSRID(ST_Point(2.3522,48.8566),4326)
-);
-```
-
-Expected:
-
-```
-POINT(2.3522 48.8566)
-```
-
-Test raster:
-
-```sql
-SELECT postgis_raster_lib_version();
-```
-
----
-
-# 12. Import Vector Data
-
-Install Shapefile tools:
-
-```bash
-sudo apt install postgis -y
-```
-
-Example shapefile:
-
-```
-roads.shp
-```
-
-Import:
-
-```bash
-shp2pgsql -I -s 4326 roads.shp public.roads | \
-psql -U gisuser -d gis_database
-```
-
----
-
-# 13. Import Raster Data
-
-Example raster:
-
-```
-elevation.tif
-```
-
-Import:
-
-```bash
-raster2pgsql \
--s 4326 \
--I \
--C \
--M \
-elevation.tif \
-public.elevation \
-| psql -U gisuser -d gis_database
-```
-
-Options:
-
-| Option    | Purpose                     |
-| --------- | --------------------------- |
-| `-s 4326` | Coordinate reference system |
-| `-I`      | Create spatial index        |
-| `-C`      | Add raster constraints      |
-| `-M`      | Analyze table               |
-
----
-
-# 14. Install QGIS
+# 13. Install QGIS
 
 Install:
 
@@ -511,12 +489,89 @@ gisuser
 
 ---
 
-# 15. Useful psql Commands
+# 14. Import Vector Data
+
+Example:
+
+```
+roads.shp
+```
+
+Import:
+
+```bash
+shp2pgsql \
+-I \
+-s 4326 \
+roads.shp \
+public.roads \
+| psql -U gisuser -d gis_database
+```
+
+---
+
+# 15. Import Raster Data
+
+Example:
+
+```
+elevation.tif
+```
+
+Import:
+
+```bash
+raster2pgsql \
+-s 4326 \
+-I \
+-C \
+-M \
+elevation.tif \
+public.elevation \
+| psql -U gisuser -d gis_database
+```
+
+Options:
+
+| Option    | Purpose                     |
+| --------- | --------------------------- |
+| `-s 4326` | Coordinate reference system |
+| `-I`      | Create spatial index        |
+| `-C`      | Add raster constraints      |
+| `-M`      | Analyze table               |
+
+---
+
+# 16. PostgreSQL GIS Performance Tuning
+
+Edit:
+
+```bash
+sudo nano /etc/postgresql/16/main/postgresql.conf
+```
+
+For a workstation with 16GB+ RAM:
+
+```
+shared_buffers = 2GB
+work_mem = 64MB
+maintenance_work_mem = 512MB
+```
+
+Restart:
+
+```bash
+sudo systemctl restart postgresql
+```
+
+---
+
+# 17. Useful psql Commands
 
 Connect:
 
 ```bash
-psql -U gisuser -d gis_database
+psql -U gisuser -d gis_database -W
 ```
 
 List databases:
@@ -531,7 +586,7 @@ List tables:
 \dt
 ```
 
-Describe a table:
+Describe table:
 
 ```sql
 \d table_name
@@ -557,7 +612,7 @@ Quit:
                          QGIS
                            |
                            |
-                     PostgreSQL 16
+                    PostgreSQL 16
                            |
           --------------------------------
           |                              |
@@ -570,13 +625,16 @@ Quit:
         psql
 ```
 
-This setup supports:
+Your completed system supports:
 
-* Shapefiles and GeoPackages
+* Shapefiles
+* GeoPackages
 * OpenStreetMap databases
-* Satellite imagery
+* GeoTIFF imagery
 * DEM/elevation models
 * Raster analysis
 * Spatial SQL
 * QGIS projects
 * Remote sensing workflows
+
+Your current installation has successfully completed the core GIS database stage. The next logical configuration step would be creating a GIS schema structure (`raw`, `working`, `analysis`, `published`) and setting up automatic backups.
