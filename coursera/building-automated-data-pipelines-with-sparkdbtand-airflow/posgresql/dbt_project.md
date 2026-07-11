@@ -1,54 +1,110 @@
-# Create dbt Snapshots logic
-Yes, your setup looks good. You already have:
+# Create dbt Snapshots SCD2 Tracking Workflow
+
+## Current Environment
+
+Your setup:
 
 ✅ PostgreSQL 16 running
-✅ `ecommerce_dw` database
-✅ `staging_customer` source table
-✅ `dim_customer_scd2` manually implemented SCD2 table
-✅ Python virtual environment
-✅ dbt Core + dbt-postgres installed
+✅ PostgreSQL database: `ecommerce_dw`
+✅ Source table: `staging_customer`
+✅ Existing manual SCD2 table: `dim_customer_scd2`
+✅ Python virtual environment: `dbt-env`
+✅ dbt Core installed
+✅ dbt-postgres adapter installed
 
-Now the next step is to **replace your manual SCD2 logic with dbt Snapshots**.
+Verify:
 
-Your current flow:
+```bash
+dbt --version
+```
+
+Expected:
+
+```
+Core:
+  installed: 1.12.x
+
+Plugins:
+  postgres: 1.10.x
+```
+
+---
+
+# Goal
+
+Replace this manual process:
 
 ```
 staging_customer
-        |
-        | (manual UPDATE + INSERT)
-        ↓
+
+      |
+      |
+      ↓
+
+Manual SQL
+
+UPDATE old record
+INSERT new record
+
+      |
+      ↓
+
 dim_customer_scd2
 ```
 
-will become:
+with:
 
 ```
-PostgreSQL staging_customer
+PostgreSQL
+
+staging_customer
+
         |
         |
         ↓
+
       dbt snapshot
+
         |
         |
         ↓
-snapshots.customer_snapshot
+
+customer_snapshot
+
         |
         |
         ↓
+
 Automatic SCD2 history
 ```
 
 ---
 
-## Step 1 — Create your dbt project
+# Step 1 — Activate Python Environment
 
-You are already here:
+Go to your project folder:
 
 ```bash
-~/Documents/myData/ecommerce_dbt_demo
+cd ~/Documents/myData/ecommerce_dbt_demo
 ```
 
-Inside your activated environment:
+Activate:
+
+```bash
+source dbt-env/bin/activate
+```
+
+You should see:
+
+```
+(dbt-env) linda@...
+```
+
+---
+
+# Step 2 — Create dbt Project
+
+Create the project:
 
 ```bash
 dbt init ecommerce_dbt
@@ -57,41 +113,66 @@ dbt init ecommerce_dbt
 Choose:
 
 ```
-postgres
+[1] postgres
 ```
 
-Your structure should become:
+Enter:
+
+```
+host: localhost
+port: 5432
+user: postgres
+password: YOUR_PASSWORD
+dbname: ecommerce_dw
+schema: public
+threads: 4
+```
+
+---
+
+## If you already created the project
+
+If you see:
+
+```
+A project called ecommerce_dbt already exists here.
+```
+
+Do not run `dbt init` again.
+
+Continue:
+
+```bash
+cd ecommerce_dbt
+```
+
+Your structure:
 
 ```
 ecommerce_dbt_demo/
 
 ├── ecommerce_dbt/
 │
-├── snapshots/
-├── models/
-├── seeds/
-├── dbt_project.yml
-│
-└── dbt-env/
+├── dbt-env/
 ```
 
-Enter:
+Inside dbt project:
 
-```bash
-cd ecommerce_dbt
+```
+ecommerce_dbt/
+
+├── models/
+├── snapshots/
+├── seeds/
+├── tests/
+└── dbt_project.yml
 ```
 
 ---
 
-# Step 2 — Configure PostgreSQL connection
+# Step 3 — Configure PostgreSQL Connection
 
-Create:
-
-```
-~/.dbt/profiles.yml
-```
-
-Edit:
+Create/edit:
 
 ```bash
 nano ~/.dbt/profiles.yml
@@ -107,13 +188,21 @@ ecommerce_dbt:
   outputs:
 
     dev:
+
       type: postgres
+
       host: localhost
+
       user: postgres
+
       password: YOUR_POSTGRES_PASSWORD
+
       port: 5432
+
       database: ecommerce_dw
+
       schema: public
+
       threads: 4
 ```
 
@@ -127,7 +216,67 @@ CTRL + X
 
 ---
 
-# Step 3 — Test dbt connection
+# Step 4 — Fix PostgreSQL Password (if required)
+
+If dbt returns:
+
+```
+password authentication failed for user "postgres"
+```
+
+Reset the password.
+
+Enter PostgreSQL:
+
+```bash
+sudo -i -u postgres
+```
+
+Then:
+
+```bash
+psql
+```
+
+Run:
+
+```sql
+ALTER USER postgres WITH PASSWORD 'postgres123';
+```
+
+Exit:
+
+```sql
+\q
+```
+
+Then:
+
+```bash
+exit
+```
+
+Update:
+
+```
+~/.dbt/profiles.yml
+```
+
+with:
+
+```yaml
+password: postgres123
+```
+
+---
+
+# Step 5 — Test dbt Connection
+
+Inside your dbt project:
+
+```bash
+cd ~/Documents/myData/ecommerce_dbt_demo/ecommerce_dbt
+```
 
 Run:
 
@@ -139,12 +288,13 @@ Expected:
 
 ```
 Connection test: OK
+
 All checks passed!
 ```
 
 ---
 
-# Step 4 — Create your first dbt snapshot
+# Step 6 — Create dbt Snapshot
 
 Create folder:
 
@@ -152,17 +302,16 @@ Create folder:
 mkdir snapshots
 ```
 
-Create file:
+Create snapshot:
 
 ```bash
 nano snapshots/customer_snapshot.sql
 ```
 
-Paste:
+Add:
 
 ```sql
 {% snapshot customer_snapshot %}
-
 
 {{
     config(
@@ -185,15 +334,20 @@ Paste:
     )
 }}
 
-
 SELECT
 
     customer_id,
+
     customer_name,
+
     email_address,
+
     shipping_address,
+
     customer_segment,
+
     load_date
+
 
 FROM public.staging_customer
 
@@ -205,14 +359,17 @@ Save.
 
 ---
 
-# What this replaces
+# What dbt now manages automatically
 
-Your manual code:
+Your old logic:
 
 ```sql
 UPDATE dim_customer_scd2
+
 SET valid_to=current_timestamp,
-is_current=false;
+is_current=false
+
+WHERE customer_id='CUST001';
 ```
 
 and:
@@ -221,53 +378,7 @@ and:
 INSERT INTO dim_customer_scd2(...)
 ```
 
-are now handled automatically by dbt.
-
----
-
-# Step 5 — Run the snapshot
-
-Execute:
-
-```bash
-dbt snapshot
-```
-
-You should see:
-
-```
-1 of 1 START snapshot customer_snapshot
-1 of 1 OK created snapshot
-```
-
----
-
-# Step 6 — Check the generated table
-
-Connect:
-
-```bash
-sudo -u postgres psql -d ecommerce_dw
-```
-
-Run:
-
-```sql
-\dt
-```
-
-You should see:
-
-```
-public.customer_snapshot
-```
-
-Query:
-
-```sql
-SELECT *
-FROM customer_snapshot;
-```
+is replaced by dbt snapshot logic.
 
 dbt automatically creates:
 
@@ -278,31 +389,78 @@ dbt_valid_from
 dbt_valid_to
 ```
 
-Example:
+---
 
-| customer_id | address | dbt_valid_from | dbt_valid_to     |
-| ----------- | ------- | -------------- | ---------------- |
-| CUST001     | Paris   | 2026-07-11     | 2026-07-11 15:00 |
-| CUST001     | Berlin  | 2026-07-11     | null             |
+# Step 7 — Run Snapshot
+
+Execute:
+
+```bash
+dbt snapshot
+```
+
+Expected:
+
+```
+START snapshot customer_snapshot
+
+OK created snapshot
+```
 
 ---
 
-# Step 7 — Test a change
+# Step 8 — Verify Snapshot Table
 
-Your current data:
+Connect:
 
-```
-CUST001
-John Smith
-Berlin
-Premium
+```bash
+sudo -u postgres psql -d ecommerce_dw
 ```
 
-Change staging:
+List tables:
+
+```sql
+\dt
+```
+
+You should see:
+
+```
+customer_snapshot
+```
+
+Query:
+
+```sql
+SELECT *
+
+FROM customer_snapshot;
+```
+
+Example:
+
+| customer_id | shipping_address | dbt_valid_from | dbt_valid_to |
+| ----------- | ---------------- | -------------- | ------------ |
+| CUST001     | Paris            | timestamp      | timestamp    |
+| CUST001     | Berlin           | timestamp      | NULL         |
+
+The NULL `dbt_valid_to` means:
+
+```
+Current version
+```
+
+---
+
+# Step 9 — Test Historical Tracking
+
+Change the staging table:
 
 ```sql
 UPDATE staging_customer
+
 SET shipping_address='London'
+
 WHERE customer_id='CUST001';
 ```
 
@@ -312,7 +470,7 @@ Exit:
 \q
 ```
 
-Run again:
+Run:
 
 ```bash
 dbt snapshot
@@ -324,21 +482,27 @@ dbt detects:
 Berlin → London
 ```
 
-and automatically creates:
+Automatically:
+
+Old:
 
 ```
-Old record:
 Berlin
-valid_to = timestamp
 
-New record:
+dbt_valid_to = timestamp
+```
+
+New:
+
+```
 London
-valid_to = NULL
+
+dbt_valid_to = NULL
 ```
 
 ---
 
-# Step 8 — Add a dbt model
+# Step 10 — Create Current Customer Model
 
 Create:
 
@@ -346,30 +510,37 @@ Create:
 models/customer_dimension.sql
 ```
 
-Example:
+Add:
 
 ```sql
 SELECT
 
 customer_id,
+
 customer_name,
+
 email_address,
+
 shipping_address,
+
 customer_segment,
 
 dbt_valid_from,
+
 dbt_valid_to
 
-FROM {{ source('public','customer_snapshot') }}
+
+FROM public.customer_snapshot
+
 
 WHERE dbt_valid_to IS NULL
 ```
 
-This gives your current customer dimension.
+This creates your current customer view.
 
 ---
 
-# Step 9 — Add tests
+# Step 11 — Add Data Quality Tests
 
 Create:
 
@@ -393,6 +564,7 @@ models:
         tests:
 
           - unique
+
           - not_null
 ```
 
@@ -404,43 +576,53 @@ dbt test
 
 ---
 
-## Your final architecture becomes:
+# Final Architecture
 
 ```
-             PostgreSQL
+                 PostgreSQL
+                     |
+                     |
+                     ↓
 
-        staging_customer
-               |
-               |
-               v
+             staging_customer
 
-        dbt snapshot
-        customer_snapshot
+                     |
+                     |
+                     ↓
 
-               |
-               |
-      ------------------
-      |                |
-Historical        Current
-records           records
+              dbt snapshot
+
+                     |
+                     |
+                     ↓
+
+          customer_snapshot table
+
+          ----------------------
+          |                    |
+          ↓                    ↓
+
+   Historical records     Current record
 
 
-Paris             London
-Berlin            Active
+   Paris                 London
+   Berlin                Active
 ```
 
 ---
 
-## Your learning path after this
+# Next Professional Extensions
 
-You are currently at a very good point. The next professional steps would be:
+Your learning path:
 
-1. ✅ dbt snapshot SCD2 (you are starting here)
-2. Add `dim_product_scd2`
-3. Add `fact_sales`
-4. Add dbt tests
-5. Add documentation (`dbt docs generate`)
-6. Schedule with Airflow
-7. Add Git + CI/CD
+1. ✅ PostgreSQL manual SCD2
+2. ✅ dbt Snapshot SCD2
+3. Add `dim_product_snapshot`
+4. Add `fact_sales`
+5. Add dbt sources + documentation
+6. Add dbt tests
+7. Add Git version control
+8. Add Airflow scheduling
+9. Deploy to cloud warehouse (Snowflake / BigQuery / Databricks)
 
-This project is now moving from a **manual PostgreSQL SCD2 exercise** into a realistic **analytics engineering project**.
+At this point your project becomes a realistic **analytics engineering portfolio project**.
