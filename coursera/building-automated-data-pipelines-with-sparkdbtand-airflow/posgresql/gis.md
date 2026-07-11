@@ -1,14 +1,16 @@
-Below is a complete setup guide for a **Linux GIS workstation** with:
+# Linux GIS Workstation Setup Guide
 
-* **PostgreSQL** — database server
-* **PostGIS** — spatial vector support
-* **PostGIS Raster (pgraster)** — raster storage and analysis
-* **GDAL tools** — importing/exporting raster and vector data
-* **pgAdmin 4** — main graphical database administration tool
+This guide installs and configures:
+
+* **PostgreSQL 16** — database server
+* **PostGIS 3** — spatial vector support
+* **PostGIS Raster** — raster storage and analysis
+* **GDAL tools** — raster/vector import and export
+* **pgAdmin 4** — graphical database administration
 * **psql** — command-line access
-* **QGIS-ready configuration** — for mapping and visualization
+* **QGIS-ready configuration** — GIS visualization and editing
 
-These instructions assume **Ubuntu/Debian Linux**. If you use another distribution, I can adapt them.
+These instructions are for **Ubuntu/Debian Linux**.
 
 ---
 
@@ -21,7 +23,7 @@ sudo apt update
 sudo apt upgrade -y
 ```
 
-Install basic tools:
+Install required tools:
 
 ```bash
 sudo apt install curl wget gnupg ca-certificates lsb-release software-properties-common -y
@@ -37,25 +39,25 @@ Install PostgreSQL:
 sudo apt install postgresql postgresql-contrib -y
 ```
 
-Check that PostgreSQL is running:
+Check PostgreSQL status:
 
 ```bash
 sudo systemctl status postgresql
 ```
 
-You should see:
+Expected:
 
 ```
 active (running)
 ```
 
-Enable it at startup:
+Enable PostgreSQL at startup:
 
 ```bash
 sudo systemctl enable postgresql
 ```
 
-Check your PostgreSQL version:
+Check the version:
 
 ```bash
 psql --version
@@ -69,11 +71,41 @@ psql (PostgreSQL) 16.x
 
 ---
 
-# 3. Create your PostgreSQL user
+# 3. Install PostGIS and Raster Support
 
-PostgreSQL creates an administrative Linux user called `postgres`.
+Install PostGIS:
 
-Switch to it:
+```bash
+sudo apt install postgis postgresql-postgis -y
+```
+
+For PostgreSQL 16:
+
+```bash
+sudo apt install postgresql-16-postgis-3 -y
+```
+
+If it says:
+
+```
+postgresql-16-postgis-3 is already the newest version
+```
+
+then PostGIS is already installed.
+
+Restart PostgreSQL:
+
+```bash
+sudo systemctl restart postgresql
+```
+
+---
+
+# 4. Create the GIS Database User
+
+Ubuntu uses **peer authentication**, so administrative PostgreSQL commands must be run as the Linux `postgres` user.
+
+Switch to the PostgreSQL administrator:
 
 ```bash
 sudo -u postgres -i
@@ -85,16 +117,22 @@ Open PostgreSQL:
 psql
 ```
 
-Create your personal database user:
+Create your GIS user:
 
 ```sql
 CREATE USER gisuser WITH PASSWORD 'choose_a_strong_password';
 ```
 
-Allow the user to create databases:
+Allow database creation:
 
 ```sql
 ALTER USER gisuser CREATEDB;
+```
+
+Check users:
+
+```sql
+\du
 ```
 
 Exit PostgreSQL:
@@ -103,7 +141,7 @@ Exit PostgreSQL:
 \q
 ```
 
-Return to your normal Linux account:
+Return to your normal Linux user:
 
 ```bash
 exit
@@ -111,42 +149,18 @@ exit
 
 ---
 
-# 4. Install PostGIS + Raster Support
+# 5. Create the GIS Database
 
-Install PostGIS:
+Create the database using the PostgreSQL administrator:
 
 ```bash
-sudo apt install postgis postgresql-postgis -y
+sudo -u postgres createdb gis_database
 ```
 
-For PostgreSQL 16, you may also install:
+Set ownership to your GIS user:
 
 ```bash
-sudo apt install postgresql-16-postgis-3 -y
-```
-
-(Change `16` if you have another PostgreSQL version.)
-
-Restart PostgreSQL:
-
-```bash
-sudo systemctl restart postgresql
-```
-
----
-
-# 5. Create a GIS Database
-
-Create a database:
-
-```bash
-createdb -U postgres gis_database
-```
-
-Give your user ownership:
-
-```bash
-psql -U postgres
+sudo -u postgres psql
 ```
 
 Inside PostgreSQL:
@@ -165,13 +179,13 @@ Exit:
 
 # 6. Enable PostGIS Extensions
 
-Connect to your GIS database:
+Connect using your GIS user:
 
 ```bash
-psql -U gisuser -d gis_database
+psql -U gisuser -d gis_database -W
 ```
 
-Enable spatial extensions:
+Enable extensions:
 
 ```sql
 CREATE EXTENSION postgis;
@@ -179,13 +193,13 @@ CREATE EXTENSION postgis_topology;
 CREATE EXTENSION postgis_raster;
 ```
 
-Check installation:
+Check PostGIS:
 
 ```sql
 SELECT postgis_full_version();
 ```
 
-You should see something similar to:
+Expected output contains:
 
 ```
 POSTGIS="3.x.x"
@@ -209,7 +223,7 @@ Exit:
 
 ---
 
-# 7. Install GDAL Raster and GIS Tools
+# 7. Install GDAL GIS Tools
 
 Install GDAL:
 
@@ -229,19 +243,17 @@ Example:
 GDAL 3.x.x
 ```
 
-Check raster import tools:
+Check raster import:
 
 ```bash
 raster2pgsql -G
 ```
 
-You should see supported raster drivers.
-
 ---
 
 # 8. Install pgAdmin 4
 
-Install pgAdmin repository key:
+Add pgAdmin repository key:
 
 ```bash
 curl https://www.pgadmin.org/static/packages_pgadmin_org.pub | \
@@ -262,7 +274,7 @@ sudo apt update
 sudo apt install pgadmin4-desktop -y
 ```
 
-Start:
+Launch:
 
 ```bash
 pgadmin4
@@ -270,11 +282,9 @@ pgadmin4
 
 ---
 
-# 9. Connect pgAdmin to PostgreSQL
+# 9. Connect pgAdmin 4
 
-Open pgAdmin.
-
-Choose:
+Open:
 
 ```
 Servers
@@ -282,7 +292,7 @@ Servers
       └── Server
 ```
 
-## General tab
+## General
 
 Name:
 
@@ -290,7 +300,7 @@ Name:
 Local GIS PostgreSQL
 ```
 
-## Connection tab
+## Connection
 
 Host:
 
@@ -324,7 +334,7 @@ your_password
 
 Save.
 
-You should now see:
+You should see:
 
 ```
 Servers
@@ -335,21 +345,15 @@ Servers
 
 ---
 
-# 10. Configure PostgreSQL for Local GIS Work
+# 10. PostgreSQL Performance Tuning for GIS
 
-Edit PostgreSQL configuration:
+Edit configuration:
 
 ```bash
-sudo nano /etc/postgresql/*/main/postgresql.conf
+sudo nano /etc/postgresql/16/main/postgresql.conf
 ```
 
-Recommended settings for a workstation:
-
-Find:
-
-```
-shared_buffers
-```
+For a workstation with 16GB+ RAM:
 
 Set:
 
@@ -357,24 +361,10 @@ Set:
 shared_buffers = 2GB
 ```
 
-(For computers with 16GB+ RAM.)
-
-Find:
-
-```
-work_mem
-```
-
 Set:
 
 ```
 work_mem = 64MB
-```
-
-Find:
-
-```
-maintenance_work_mem
 ```
 
 Set:
@@ -404,7 +394,7 @@ sudo systemctl restart postgresql
 Connect:
 
 ```bash
-psql -U gisuser -d gis_database
+psql -U gisuser -d gis_database -W
 ```
 
 Test geometry:
@@ -415,7 +405,7 @@ ST_SetSRID(ST_Point(2.3522,48.8566),4326)
 );
 ```
 
-Result:
+Expected:
 
 ```
 POINT(2.3522 48.8566)
@@ -431,12 +421,16 @@ SELECT postgis_raster_lib_version();
 
 # 12. Import Vector Data
 
-Example: import a shapefile.
-
-Install tools:
+Install Shapefile tools:
 
 ```bash
-sudo apt install shp2pgsql -y
+sudo apt install postgis -y
+```
+
+Example shapefile:
+
+```
+roads.shp
 ```
 
 Import:
@@ -450,7 +444,7 @@ psql -U gisuser -d gis_database
 
 # 13. Import Raster Data
 
-Example GeoTIFF:
+Example raster:
 
 ```
 elevation.tif
@@ -471,24 +465,24 @@ public.elevation \
 
 Options:
 
-| Option    | Purpose            |
-| --------- | ------------------ |
-| `-s 4326` | Coordinate system  |
-| `-I`      | Spatial index      |
-| `-C`      | Raster constraints |
-| `-M`      | Analyze table      |
+| Option    | Purpose                     |
+| --------- | --------------------------- |
+| `-s 4326` | Coordinate reference system |
+| `-I`      | Create spatial index        |
+| `-C`      | Add raster constraints      |
+| `-M`      | Analyze table               |
 
 ---
 
-# 14. Install QGIS (Recommended)
+# 14. Install QGIS
 
-For viewing and editing GIS data:
+Install:
 
 ```bash
 sudo apt install qgis -y
 ```
 
-Connect QGIS:
+Connect:
 
 ```
 Layer
@@ -537,7 +531,7 @@ List tables:
 \dt
 ```
 
-Describe table:
+Describe a table:
 
 ```sql
 \d table_name
@@ -557,35 +551,32 @@ Quit:
 
 ---
 
-# Final GIS Stack
-
-Your final setup will be:
+# Final GIS Architecture
 
 ```
-                 QGIS
-                   |
-                   |
-               PostgreSQL
-                   |
-        ---------------------
-        |                   |
-     PostGIS            PostGIS Raster
-        |                   |
-   Vector data        GeoTIFF / DEM
-        |
-      pgAdmin
-        |
-       psql
+                         QGIS
+                           |
+                           |
+                     PostgreSQL 16
+                           |
+          --------------------------------
+          |                              |
+       PostGIS                    PostGIS Raster
+          |                              |
+   Vector datasets              GeoTIFF / DEM data
+          |
+       pgAdmin 4
+          |
+        psql
 ```
 
-This is a professional GIS database setup suitable for:
+This setup supports:
 
-* GeoPackage/shapefile migration
-* OpenStreetMap data
-* satellite imagery
+* Shapefiles and GeoPackages
+* OpenStreetMap databases
+* Satellite imagery
 * DEM/elevation models
-* remote sensing workflows
-* spatial SQL analysis
+* Raster analysis
+* Spatial SQL
 * QGIS projects
-
-If you are setting this up for **large raster datasets (Sentinel/Landsat/DEM)**, the next useful step would be tuning PostgreSQL specifically for raster performance and adding extensions like `pgRouting` and `timescaledb`.
+* Remote sensing workflows
