@@ -321,7 +321,7 @@ sudo -u postgres psql -d ecommerce_dw
 Backup your database:
 
 ```bash
-pg_dump ecommerce_dw > ecommerce_dw_backup.sql
+sudo -u postgres pg_dump ecommerce_dw > "/home/linda/Documents/myData/ecommerce_dw_backup.sql"
 ```
 
 Restore:
