@@ -271,9 +271,3 @@ The installation issue was caused by a temporary DNS resolution failure involvin
 pgadmin4 9.15 from Bruno Enten (brunoenten) installed
 ```
 
-At this stage:
-
-* ✔ DNS is functioning correctly.
-* ✔ pgAdmin 4 is installed.
-* ✔ The next step is to launch pgAdmin and register the local PostgreSQL/PostGIS server.
-* ✔ The remaining Guix messages are cosmetic and can be removed by cleaning up `.bashrc`.
