@@ -1,140 +1,85 @@
-# remove **example project 
+# Step 1 — Create a `sources.yml` file
 
-> `dbt init` created**, not from anything you built.
-
-Notice the key part of the error:
+From your project root:
 
 ```text
-models/example/schema.yml
-```
-
-and
-
-```text
-relation "public.my_first_dbt_model" does not exist
-```
-
-Those are dbt's tutorial models (`my_first_dbt_model` and `my_second_dbt_model`), which you've never built (or have deleted), but their tests are still present.
-
-### Step 1: Verify your project structure
-
-Run:
-
-```bash
-tree -L 3
-```
-
-or
-
-```bash
-find models -maxdepth 2 -type f
-```
-
-You will probably see something like:
-
-```text
-models/
-├── dim_customer_current.sql
-├── schema.yml
-├── example/
-│   ├── my_first_dbt_model.sql
-│   ├── my_second_dbt_model.sql
-│   └── schema.yml
-└── staging/
-    └── stg_customers.sql
-```
-
-or perhaps:
-
-```text
-models/
-├── example/
-│   └── schema.yml
-```
-
----
-
-## Step 2: Remove the example project
-
-If you're no longer using the example models, simply remove the example directory:
-
-```bash
-rm -r models/example
-```
-
-or, if you prefer to keep it, rename it:
-
-```bash
-mv models/example models/example_backup
-```
-
----
-
-## Step 3: Run the tests again
-
-```bash
-dbt test
-```
-
-Now you should only see your tests, for example:
-
-```text
-PASS unique_dim_customer_current_customer_id
-PASS not_null_dim_customer_current_customer_id
-
-Done. PASS=2 WARN=0 ERROR=0
-```
-
----
-
-## Step 4: Your project should look something like this
-
-```
 ecommerce_dbt/
-
-models/
-│
-├── staging/
-│   └── stg_customers.sql
-│
-├── dim_customer_current.sql
-│
-└── schema.yml
-
-snapshots/
-│
-└── customer_snapshot.sql
-
-dbt_project.yml
 ```
 
-No `models/example/` folder is needed anymore.
+go to the `models/staging` folder:
+
+```bash
+cd ~/Documents/myData/ecommerce_dbt_demo/ecommerce_dbt
+```
+
+Create the file:
+
+```bash
+nano models/staging/sources.yml
+```
 
 ---
 
-## Where you are now
+# Step 2 — Define your source
 
-You've successfully implemented nearly everything from the lesson:
+Paste the following:
 
-| Feature                                    | Status                                  |
-| ------------------------------------------ | --------------------------------------- |
-| PostgreSQL source table                    | ✅                                       |
-| Staging model (`stg_customers`)            | ✅                                       |
-| `record_hash`                              | ✅                                       |
-| Snapshot with `ref()`                      | ✅                                       |
-| SCD Type 2 history                         | ✅                                       |
-| Current dimension (`dim_customer_current`) | ✅                                       |
-| Snapshot rerun after updates               | ✅                                       |
-| Data tests                                 | ✅ (only example tests remain to remove) |
+```yaml
+version: 2
+
+sources:
+  - name: ecommerce
+    description: "Raw customer data loaded into PostgreSQL."
+
+    database: ecommerce_dw
+    schema: public
+
+    tables:
+      - name: staging_customer
+        description: "Raw customer staging table."
+```
+
+Save:
+
+* **Ctrl + O**
+* **Enter**
+* **Ctrl + X**
 
 ---
 
-### Next recommendation
+# Step 3 — Update `stg_customers.sql`
 
-Before moving on to another lesson, I recommend one final improvement that professional dbt projects use:
+Open your staging model:
 
-1. Create a **`sources.yml`** file to define `staging_customer` as a dbt source.
-2. Replace this in `stg_customers.sql`:
+```bash
+nano models/staging/stg_customers.sql
+```
+
+You probably have something like:
+
+```sql
+select
+
+    customer_id,
+    customer_name,
+    email_address,
+    shipping_address,
+    customer_segment,
+    load_date,
+
+    md5(
+        concat(
+            customer_name,
+            email_address,
+            shipping_address,
+            customer_segment
+        )
+    ) as record_hash
+
+from public.staging_customer
+```
+
+Replace only the last line:
 
 ```sql
 from public.staging_customer
@@ -146,22 +91,186 @@ with:
 from {{ source('ecommerce', 'staging_customer') }}
 ```
 
-This is the standard dbt pattern and will complete your project's lineage:
+Your model becomes:
 
+```sql
+select
+
+    customer_id,
+    customer_name,
+    email_address,
+    shipping_address,
+    customer_segment,
+    load_date,
+
+    md5(
+        concat(
+            customer_name,
+            email_address,
+            shipping_address,
+            customer_segment
+        )
+    ) as record_hash
+
+from {{ source('ecommerce', 'staging_customer') }}
 ```
-PostgreSQL table
-       │
-       ▼
-source()
-       │
-       ▼
-stg_customers
-       │
-       ▼
-customer_snapshot
-       │
-       ▼
+
+Save and exit.
+
+---
+
+# Step 4 — Verify your snapshot
+
+Open:
+
+```bash
+nano snapshots/customer_snapshot.sql
+```
+
+The end of the file should still be:
+
+```sql
+select *
+
+from {{ ref('stg_customers') }}
+
+{% endsnapshot %}
+```
+
+Notice the dependency chain:
+
+* `stg_customers` reads from a **source**.
+* `customer_snapshot` reads from a **model**.
+
+---
+
+# Step 5 — Run the staging model
+
+Execute:
+
+```bash
+dbt run --select stg_customers
+```
+
+Expected output:
+
+```text
+1 of 1 OK created sql model stg_customers
+```
+
+---
+
+# Step 6 — Test the source configuration
+
+Run:
+
+```bash
+dbt source freshness
+```
+
+Since you haven't configured freshness settings yet, dbt may simply report that there are no freshness criteria. That's normal—the important thing is that it recognizes the source without errors.
+
+---
+
+# Step 7 — Run the snapshot
+
+```bash
+dbt snapshot
+```
+
+Expected:
+
+```text
+1 of 1 OK snapshotted customer_snapshot
+```
+
+---
+
+# Step 8 — Generate documentation
+
+Run:
+
+```bash
+dbt docs generate
+```
+
+Expected:
+
+```text
+Catalog written successfully
+Manifest written successfully
+```
+
+---
+
+# Step 9 — View the lineage graph
+
+Start the documentation server:
+
+```bash
+dbt docs serve
+```
+
+By default, it will display a local URL such as:
+
+```text
+http://127.0.0.1:8080
+```
+
+Open that address in your web browser.
+
+You should see a lineage graph similar to:
+
+```text
+staging_customer (Source)
+          │
+          ▼
+    stg_customers
+          │
+          ▼
+ customer_snapshot
+          │
+          ▼
 dim_customer_current
 ```
 
-That's the architecture you'll see in most production dbt projects.
+This graph is one of dbt's most valuable features because it automatically documents how data flows through your project.
+
+---
+
+## Your project after this change
+
+Your directory should look like this:
+
+```text
+ecommerce_dbt/
+├── models/
+│   ├── staging/
+│   │   ├── sources.yml
+│   │   └── stg_customers.sql
+│   ├── dim_customer_current.sql
+│   └── schema.yml
+├── snapshots/
+│   └── customer_snapshot.sql
+└── dbt_project.yml
+```
+
+At this point, your project follows the standard dbt architecture:
+
+```text
+PostgreSQL table
+        │
+        ▼
+source('ecommerce', 'staging_customer')
+        │
+        ▼
+stg_customers
+        │
+        ▼
+customer_snapshot
+        │
+        ▼
+dim_customer_current
+```
+
+This is the same pattern you'll encounter in many real-world analytics engineering projects.
