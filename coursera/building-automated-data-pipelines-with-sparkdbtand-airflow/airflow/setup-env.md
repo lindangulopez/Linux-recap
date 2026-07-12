@@ -1,222 +1,100 @@
-Since you are on **Ubuntu Linux**, follow these steps.
+# Setup Airflow
 
-You already created:
+Yes, that is correct. Your `dbt-env` is already inside your **dbt-learning** project:
 
-```bash
-python3 -m venv dbt-env
+```text
+~/Documents/myData/dbt-learning
+│
+└── dbt-env/
+    ├── bin/
+    ├── include/
+    ├── lib/
+    └── pyvenv.cfg
 ```
 
-Activate it:
+You should activate it from the `dbt-learning` directory.
+
+Run:
+
+```bash
+cd ~/Documents/myData/dbt-learning
+```
+
+Then:
 
 ```bash
 source dbt-env/bin/activate
 ```
 
-Your terminal should change to something like:
+Your terminal should become:
 
 ```bash
-(dbt-env) user@ubuntu:~$
+(dbt-env) linda@linda-HP-EliteBook:~/Documents/myData/dbt-learning$
 ```
 
----
-
-## 1. Upgrade pip and install required packages
-
-First upgrade packaging tools:
-
-```bash
-python -m pip install --upgrade pip setuptools wheel
-```
-
-Airflow requires some system dependencies. Install them:
-
-```bash
-sudo apt update
-
-sudo apt install -y \
-    python3-dev \
-    build-essential \
-    libssl-dev \
-    libffi-dev
-```
-
----
-
-## 2. Install Apache Airflow
-
-Inside your activated environment:
-
-```bash
-pip install apache-airflow
-```
-
-This may take several minutes.
-
----
-
-## 3. Verify Airflow installation
-
-Check the version:
-
-```bash
-airflow version
-```
-
-Example output:
-
-```text
-3.0.x
-```
-
-or
-
-```text
-2.x.x
-```
-
-Test your imports:
-
-```bash
-python -c "
-from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.models import Variable
-print('Airflow imports OK')
-"
-```
-
-Expected:
-
-```text
-Airflow imports OK
-```
-
----
-
-## 4. Configure Airflow
-
-Set the Airflow home directory:
-
-```bash
-export AIRFLOW_HOME=~/airflow
-```
-
-To make it permanent:
-
-```bash
-echo 'export AIRFLOW_HOME=~/airflow' >> ~/.bashrc
-
-source ~/.bashrc
-```
-
----
-
-## 5. Initialize Airflow database
-
-Run:
-
-```bash
-airflow db migrate
-```
-
-(For older Airflow versions you may see `airflow db init` in tutorials.)
-
----
-
-## 6. Create an Airflow user
-
-For Airflow 2.x:
-
-```bash
-airflow users create \
-    --username admin \
-    --firstname Admin \
-    --lastname User \
-    --role Admin \
-    --email admin@example.com
-```
-
----
-
-## 7. Start Airflow
-
-Open terminal 1:
-
-```bash
-airflow scheduler
-```
-
-Open terminal 2:
-
-```bash
-airflow webserver --port 8080
-```
-
-Open your browser:
-
-```
-http://localhost:8080
-```
-
----
-
-## 8. Fix VS Code import warnings
-
-If your code still shows:
-
-```python
-from airflow import DAG
-```
-
-with a yellow underline:
-
-1. Open VS Code.
-2. Press:
-
-```
-CTRL + SHIFT + P
-```
-
-3. Select:
-
-```
-Python: Select Interpreter
-```
-
-4. Choose:
-
-```
-./dbt-env/bin/python
-```
-
-5. Restart VS Code.
-
----
-
-## Quick check
-
-Run this:
+Verify:
 
 ```bash
 which python
 ```
 
-You should see:
+Expected:
 
 ```text
-/home/<your-user>/dbt-env/bin/python
+/home/linda/Documents/myData/dbt-learning/dbt-env/bin/python
 ```
 
-and:
+Check dbt:
 
 ```bash
-which airflow
+dbt --version
 ```
 
-should show:
+You should see your installed dbt version.
+
+---
+
+### If you want to use Airflow in this same environment
+
+You can install it here:
+
+```bash
+pip install apache-airflow
+```
+
+Then test:
+
+```bash
+python -c "from airflow import DAG; print('Airflow OK')"
+```
+
+Expected:
 
 ```text
-/home/<your-user>/dbt-env/bin/airflow
+Airflow OK
 ```
 
-If `which airflow` returns nothing, Airflow is not installed in your active virtual environment.
+---
+
+### Recommended project structure
+
+Since this is a dbt project, I would keep it like:
+
+```text
+myData/
+│
+├── dbt-learning/
+│   │
+│   ├── dbt-env/              # Python virtual environment
+│   ├── dbt_project.yml       # dbt configuration
+│   ├── models/               # dbt SQL models
+│   └── profiles.yml
+│
+└── airflow-learning/
+    │
+    ├── airflow-env/          # Airflow virtual environment
+    └── dags/
+        └── sales_analytics_dag.py
+```
+
+dbt and Airflow are often used together, but keeping separate environments avoids dependency conflicts.
