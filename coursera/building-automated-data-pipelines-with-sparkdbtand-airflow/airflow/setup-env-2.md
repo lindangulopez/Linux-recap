@@ -1,15 +1,23 @@
-# updated for **Apache Airflow 3.3.0**. 
+# **Apache Airflow 3.3.0 Simple Auth Manager behavior**:
 
-The main changes are:
-
-* Remove `airflow users create` and `airflow users reset-password` (Airflow 3.3 does not use that CLI).
-* Use `simple_auth_manager_users` in `airflow.cfg` for login credentials.
-* Keep `airflow api-server` instead of `airflow webserver`.
-
-Here is the corrected version:
+* `simple_auth_manager_users` uses **username:role**, not username:password.
+* Passwords are auto-generated and stored in `simple_auth_manager_passwords.json.generated`.
+* Removed incorrect password examples.
+* Kept the Airflow 3.3 commands (`api-server`, `db migrate`).
 
 ````markdown
-# Activate Airflow & Configure Login Password
+# Updated for Apache Airflow 3.3.0
+
+The main changes from Airflow 2.x are:
+
+* Remove `airflow users create` and `airflow users reset-password` (Airflow 3.3 does not use this CLI).
+* Use `simple_auth_manager_users` in `airflow.cfg` to define users and roles.
+* Passwords are automatically generated and stored in `simple_auth_manager_passwords.json.generated`.
+* Use `airflow api-server` instead of `airflow webserver`.
+
+---
+
+# Activate Airflow & Configure Login
 
 ## 1. Move into the Airflow project folder
 
@@ -17,7 +25,7 @@ Use `cd` to move into the project:
 
 ```bash
 cd ~/Documents/myData/airflow-learning
-```
+````
 
 Your prompt should become:
 
@@ -67,14 +75,14 @@ Expected:
 
 # Start Airflow Services
 
-Airflow 3.3.0 uses two processes:
+Airflow 3.3.0 uses two main processes:
 
-- Scheduler → runs DAG scheduling and tasks
-- API Server → provides the Airflow web interface
+* Scheduler → schedules DAG runs and executes tasks
+* API Server → provides the Airflow web interface
 
 ---
 
-## Terminal 1: Start Scheduler
+# Terminal 1: Start Scheduler
 
 Run:
 
@@ -92,7 +100,7 @@ Starting the scheduler
 
 ---
 
-## Terminal 2: Start Airflow UI
+# Terminal 2: Start Airflow UI
 
 Open a new terminal.
 
@@ -130,21 +138,23 @@ http://localhost:8082
 
 # Airflow 3.3.0 Authentication
 
-Airflow 3.3.0 uses the **Simple Auth Manager** for development environments.
+Airflow 3.3.0 uses the **Simple Auth Manager** by default.
 
 You will see:
 
 > Simple auth manager enabled
 
-The username and password are configured in:
+Simple Auth Manager is intended for development and testing environments.
+
+---
+
+# Configure Users
+
+Users are configured in:
 
 ```text
 airflow-home/airflow.cfg
 ```
-
----
-
-## Check Login Credentials
 
 Open the configuration:
 
@@ -155,45 +165,35 @@ nano ~/Documents/myData/airflow-learning/airflow-home/airflow.cfg
 Find:
 
 ```ini
+[core]
 simple_auth_manager_users =
 ```
 
+The format is:
+
+```ini
+simple_auth_manager_users = username:role
+```
+
 Example:
 
 ```ini
-simple_auth_manager_users = admin:admin
+simple_auth_manager_users = lindangulopez:admin
 ```
 
-This means:
+The available roles are:
 
 ```text
-Username:
+viewer
+user
+op
 admin
-
-Password:
-admin
 ```
 
----
-
-## Create Your Own Login
-
-Change:
+For a learning environment, use:
 
 ```ini
-simple_auth_manager_users = admin:admin
-```
-
-to:
-
-```ini
-simple_auth_manager_users = lindangulopez:YourPassword
-```
-
-Example:
-
-```ini
-simple_auth_manager_users = lindangulopez:Airflow123!
+simple_auth_manager_users = lindangulopez:admin
 ```
 
 Save:
@@ -206,7 +206,35 @@ CTRL + X
 
 ---
 
-## Restart Airflow API Server
+# Find the Generated Password
+
+Airflow automatically creates passwords.
+
+The password file is located at:
+
+```text
+$AIRFLOW_HOME/simple_auth_manager_passwords.json.generated
+```
+
+View the generated password:
+
+```bash
+cat ~/Documents/myData/airflow-learning/airflow-home/simple_auth_manager_passwords.json.generated
+```
+
+Example output:
+
+```json
+{
+    "lindangulopez": "generated-password-here"
+}
+```
+
+Use this generated password to log into Airflow.
+
+---
+
+# Restart Airflow API Server
 
 Stop the API server:
 
@@ -233,10 +261,8 @@ Username:
 lindangulopez
 
 Password:
-Airflow123!
+(use the password from simple_auth_manager_passwords.json.generated)
 ```
-
-(use the password configured in `airflow.cfg`)
 
 ---
 
@@ -258,12 +284,16 @@ sales_analytics_pipeline
 
 # Airflow 2.x vs Airflow 3.3.0 Changes
 
-| Airflow 2.x | Airflow 3.3.0 |
-|---|---|
-| `airflow webserver` | `airflow api-server` |
-| `airflow users create` | `simple_auth_manager_users` |
-| `airflow users reset-password` | Edit `airflow.cfg` |
-| `airflow db init` | `airflow db migrate` |
+| Airflow 2.x                    | Airflow 3.3.0               |
+| ------------------------------ | --------------------------- |
+| `airflow webserver`            | `airflow api-server`        |
+| `airflow users create`         | `simple_auth_manager_users` |
+| `airflow users reset-password` | Generated passwords file    |
+| `airflow db init`              | `airflow db migrate`        |
+
+---
+
+# Project Environment
 
 Your project uses:
 
@@ -274,7 +304,15 @@ Simple Auth Manager
 LocalExecutor
 ```
 
-This setup is suitable for learning Airflow orchestration and later connecting it with your dbt project.
-````
+This setup is suitable for learning:
 
-This version now matches the environment you actually installed and avoids the Airflow 2.x commands that caused the login confusion.
+* DAG development
+* Workflow orchestration
+* Scheduling pipelines
+* dbt integration
+* Production-style data engineering patterns
+
+```
+
+This version now matches your actual installation and the official Airflow 3.3.0 documentation.
+```
