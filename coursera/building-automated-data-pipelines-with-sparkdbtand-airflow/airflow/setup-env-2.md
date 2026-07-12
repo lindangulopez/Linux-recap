@@ -1,20 +1,35 @@
-# Activate Airflow & create pwd
+# updated for **Apache Airflow 3.3.0**. 
 
-Use `cd` to move into the folder:
+The main changes are:
+
+* Remove `airflow users create` and `airflow users reset-password` (Airflow 3.3 does not use that CLI).
+* Use `simple_auth_manager_users` in `airflow.cfg` for login credentials.
+* Keep `airflow api-server` instead of `airflow webserver`.
+
+Here is the corrected version:
+
+````markdown
+# Activate Airflow & Configure Login Password
+
+## 1. Move into the Airflow project folder
+
+Use `cd` to move into the project:
 
 ```bash
 cd ~/Documents/myData/airflow-learning
 ```
 
-Your prompt should then become:
+Your prompt should become:
 
 ```text
 linda@...:~/Documents/myData/airflow-learning$
 ```
 
-Now continue:
+---
 
-### Activate Airflow environment
+## 2. Activate Airflow environment
+
+Activate the Python virtual environment:
 
 ```bash
 source airflow-env/bin/activate
@@ -26,101 +41,180 @@ You should see:
 (airflow-env) linda@...:~/Documents/myData/airflow-learning$
 ```
 
-### Set Airflow Home
+---
+
+## 3. Set Airflow Home
+
+Set the Airflow working directory:
 
 ```bash
 export AIRFLOW_HOME=~/Documents/myData/airflow-learning/airflow-home
 ```
 
-### Start scheduler (Terminal 1)
+Verify:
+
+```bash
+echo $AIRFLOW_HOME
+```
+
+Expected:
+
+```text
+/home/linda/Documents/myData/airflow-learning/airflow-home
+```
+
+---
+
+# Start Airflow Services
+
+Airflow 3.3.0 uses two processes:
+
+- Scheduler → runs DAG scheduling and tasks
+- API Server → provides the Airflow web interface
+
+---
+
+## Terminal 1: Start Scheduler
+
+Run:
 
 ```bash
 airflow scheduler
 ```
 
-Leave it running.
+Leave this terminal running.
 
-Then open another terminal and repeat:
+Expected output:
+
+```text
+Starting the scheduler
+```
+
+---
+
+## Terminal 2: Start Airflow UI
+
+Open a new terminal.
+
+Go back to the project:
 
 ```bash
 cd ~/Documents/myData/airflow-learning
+```
+
+Activate the environment:
+
+```bash
 source airflow-env/bin/activate
+```
+
+Set Airflow Home:
+
+```bash
 export AIRFLOW_HOME=~/Documents/myData/airflow-learning/airflow-home
+```
+
+Start the API server:
+
+```bash
 airflow api-server --port 8082
 ```
 
-Then open:
+Open:
 
 ```text
 http://localhost:8082
 ```
 
-You are in the right place now — the only issue was missing `cd`.
+---
 
-You are using **Airflow 3.x with the Simple Auth Manager**, which is why you see:
+# Airflow 3.3.0 Authentication
+
+Airflow 3.3.0 uses the **Simple Auth Manager** for development environments.
+
+You will see:
 
 > Simple auth manager enabled
 
-In this setup, the username is usually the one you configured, but the password is **not displayed anywhere after creation**.
-
-Your username is likely:
+The username and password are configured in:
 
 ```text
-lindangulopez
+airflow-home/airflow.cfg
 ```
-
-The password is the one you set when the user was created. If you do not remember it, reset it.
 
 ---
 
-### 1. Stop the Airflow API server temporarily
+## Check Login Credentials
 
-In the terminal running:
+Open the configuration:
 
 ```bash
-airflow api-server --port 8082
+nano ~/Documents/myData/airflow-learning/airflow-home/airflow.cfg
 ```
 
-press:
+Find:
+
+```ini
+simple_auth_manager_users =
+```
+
+Example:
+
+```ini
+simple_auth_manager_users = admin:admin
+```
+
+This means:
+
+```text
+Username:
+admin
+
+Password:
+admin
+```
+
+---
+
+## Create Your Own Login
+
+Change:
+
+```ini
+simple_auth_manager_users = admin:admin
+```
+
+to:
+
+```ini
+simple_auth_manager_users = lindangulopez:YourPassword
+```
+
+Example:
+
+```ini
+simple_auth_manager_users = lindangulopez:Airflow123!
+```
+
+Save:
+
+```text
+CTRL + O
+ENTER
+CTRL + X
+```
+
+---
+
+## Restart Airflow API Server
+
+Stop the API server:
 
 ```text
 CTRL + C
 ```
 
----
-
-### 2. Reset the password
-
-From your Airflow project:
-
-```bash
-cd ~/Documents/myData/airflow-learning
-
-source airflow-env/bin/activate
-
-export AIRFLOW_HOME=~/Documents/myData/airflow-learning/airflow-home
-```
-
-Run:
-
-```bash
-airflow users reset-password --username lindangulopez
-```
-
-It will ask:
-
-```text
-Password:
-Repeat for confirmation:
-```
-
-Enter a new password.
-
----
-
-### 3. Restart the API server
-
-Run:
+Restart:
 
 ```bash
 airflow api-server --port 8082
@@ -139,33 +233,48 @@ Username:
 lindangulopez
 
 Password:
-<the new password you just created>
+Airflow123!
+```
+
+(use the password configured in `airflow.cfg`)
+
+---
+
+# Check DAGs
+
+Verify Airflow detects your DAG:
+
+```bash
+airflow dags list
+```
+
+Expected:
+
+```text
+sales_analytics_pipeline
 ```
 
 ---
 
-### If the user does not exist
+# Airflow 2.x vs Airflow 3.3.0 Changes
 
-Check users:
+| Airflow 2.x | Airflow 3.3.0 |
+|---|---|
+| `airflow webserver` | `airflow api-server` |
+| `airflow users create` | `simple_auth_manager_users` |
+| `airflow users reset-password` | Edit `airflow.cfg` |
+| `airflow db init` | `airflow db migrate` |
 
-```bash
-airflow users list
+Your project uses:
+
+```text
+Apache Airflow 3.3.0
+Python virtual environment
+Simple Auth Manager
+LocalExecutor
 ```
 
-If you see no `lindangulopez`, create it:
+This setup is suitable for learning Airflow orchestration and later connecting it with your dbt project.
+````
 
-```bash
-airflow users create \
---username lindangulopez \
---firstname Linda \
---lastname Lopez \
---role Admin \
---email linda@example.com
-```
-
-Then set the password when prompted.
-
----
-
-For your GitHub project, I would also update your README because the original instructions used the older Airflow 2.x user flow. Airflow 3.x changed authentication and the UI startup commands.
-
+This version now matches the environment you actually installed and avoids the Airflow 2.x commands that caused the login confusion.
