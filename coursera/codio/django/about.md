@@ -67,10 +67,15 @@ pip --version
 pip install django
 ```
 
-Verify the installation:
+```bash
+python -m pip install --upgrade pip
+```
+
+!install with python:
 
 ```bash
-django-admin --version
+sudo apt install python3-django
+
 ```
 
 ---
