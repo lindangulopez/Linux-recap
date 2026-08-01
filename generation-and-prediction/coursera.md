@@ -136,10 +136,12 @@ Hands-on projects include designing multi-agent AI systems, implementing ChatGPT
 
 ---
 
+
+## [Leveraging Virtual Assistants for Personal Productivity](https://coursera.org/share/41eb711d58e04b062d8d842f3c1ed5fb)
+
 # Remaining Courses in the Specialization
 
-1. Leveraging Virtual Assistants for Personal Productivity
-2. Elevate Team Productivity with CrewAI
-3. Maximizing the Generative AI Value
-4. Next-Generation AI Assistant: Claude by Anthropic
-5. Automated Report Generation with Generative AI
+* Elevate Team Productivity with CrewAI
+* Maximizing the Generative AI Value
+* Next-Generation AI Assistant: Claude by Anthropic
+* Automated Report Generation with Generative AI
