@@ -1,6 +1,7 @@
 # ====================================================
 # GeoAI + LIFE EU Proposal CrewAI Pipeline
 # Greater Côa Valley Rewilding Project
+# Compatible with CrewAI 1.15.10
 # ====================================================
 
 
@@ -14,9 +15,8 @@ from datetime import datetime
 
 from dotenv import load_dotenv
 
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process, LLM
 from crewai_tools import SerperDevTool
-from langchain_openai import ChatOpenAI
 
 
 
@@ -35,14 +35,18 @@ SERPER_API_KEY = os.getenv("SERPER_API_KEY")
 
 if not OPENAI_API_KEY:
     raise ValueError(
-        "Missing OPENAI_API_KEY. Check your .env file."
+        "OPENAI_API_KEY missing. Check your .env file."
     )
 
 
 if not SERPER_API_KEY:
     raise ValueError(
-        "Missing SERPER_API_KEY. Check your .env file."
+        "SERPER_API_KEY missing. Check your .env file."
     )
+
+
+# CrewAI tools read Serper from environment
+os.environ["SERPER_API_KEY"] = SERPER_API_KEY
 
 
 
@@ -50,7 +54,7 @@ if not SERPER_API_KEY:
 # AI CONFIGURATION
 # ====================================================
 
-llm = ChatOpenAI(
+llm = LLM(
 
     model="gpt-4o-mini",
 
@@ -61,16 +65,12 @@ llm = ChatOpenAI(
 )
 
 
-search_tool = SerperDevTool(
-
-    api_key=SERPER_API_KEY
-
-)
+search_tool = SerperDevTool()
 
 
 
 # ====================================================
-# MARKDOWN STORAGE
+# OUTPUT STORAGE
 # ====================================================
 
 RUN_DATE = datetime.now().strftime(
@@ -155,8 +155,8 @@ monitoring in the Greater Côa Valley.
 
     backstory="""
 A GIS and Earth Observation expert specialising in
-Sentinel, Copernicus, biodiversity datasets,
-LiDAR and spatial artificial intelligence workflows.
+Sentinel, Copernicus, LiDAR, biodiversity datasets
+and spatial artificial intelligence workflows.
 """,
 
     tools=[search_tool],
@@ -180,8 +180,8 @@ analysis and restoration planning.
 """,
 
     backstory="""
-A landscape ecologist experienced in habitat modelling,
-species distribution models, wildlife corridors,
+A landscape ecologist experienced in habitat suitability
+models, species distribution models, wildlife corridors,
 graph theory and conservation planning.
 """,
 
@@ -207,7 +207,8 @@ rewilding and ecological connectivity project.
 
     backstory="""
 An EU funding consultant experienced in LIFE Nature,
-Biodiversity, Climate projects and environmental innovation.
+Biodiversity, Climate projects and environmental
+innovation.
 """,
 
     tools=[search_tool],
@@ -232,7 +233,8 @@ LIFE EU project proposal.
 
     backstory="""
 An expert EU proposal writer experienced in integrating
-science, innovation, impacts, policy alignment and budgets.
+science, innovation, impacts, policy alignment,
+work packages and budgets.
 """,
 
     tools=[],
@@ -282,7 +284,7 @@ literature_task = Task(
 Research scientific literature related to:
 
 - GeoAI in biodiversity conservation
-- AI habitat mapping
+- artificial intelligence habitat mapping
 - ecological connectivity modelling
 - rewilding science
 - landscape restoration
@@ -290,8 +292,7 @@ Research scientific literature related to:
 Focus on Portugal and the Greater Côa Valley.
 
 Identify:
-
-- important publications
+- key publications
 - methodologies
 - research gaps
 - innovation opportunities
@@ -299,11 +300,8 @@ Identify:
 
     expected_output="""
 A scientific literature review containing:
-
-- references
-- methods
-- lessons learned
-- research opportunities
+references, methods, lessons learned,
+and research opportunities.
 """,
 
     agent=literature_agent
@@ -331,14 +329,9 @@ Explain their role.
 """,
 
     expected_output="""
-Technical data inventory containing:
-
-- dataset description
-- provider
-- resolution
-- accessibility
-- AI applications
-- limitations
+A technical data inventory containing:
+datasets, providers, resolution,
+accessibility, AI applications and limitations.
 """,
 
     agent=data_agent
@@ -357,7 +350,7 @@ Include:
 - species distribution modelling
 - resistance landscapes
 - wildlife corridor identification
-- graph theory approaches
+- graph theory
 - validation strategies
 - monitoring indicators
 
@@ -366,12 +359,8 @@ Adapt everything to the Greater Côa Valley.
 
     expected_output="""
 A GeoAI methodological framework describing:
-
-- workflow
-- algorithms
-- indicators
-- validation
-- implementation strategy
+workflow, algorithms, indicators,
+validation and implementation strategy.
 """,
 
     agent=connectivity_agent
@@ -396,11 +385,8 @@ Identify successful LIFE projects and lessons.
 
     expected_output="""
 A LIFE funding strategy containing:
-
-- programme alignment
-- innovation argument
-- expected impacts
-- project positioning
+programme alignment, innovation argument,
+expected impacts and positioning.
 """,
 
     agent=life_agent
@@ -411,7 +397,7 @@ A LIFE funding strategy containing:
 proposal_task = Task(
 
     description="""
-Create a LIFE EU concept proposal using all previous reports.
+Create a LIFE EU concept proposal using previous reports.
 
 Include:
 
@@ -437,12 +423,10 @@ A complete LIFE EU proposal concept document.
 """,
 
     context=[
-
         literature_task,
         data_task,
         connectivity_task,
         life_task
-
     ],
 
     agent=proposal_agent
@@ -480,56 +464,48 @@ A detailed evaluator report.
 
 
 # ====================================================
-# EXECUTION
+# RUN CREW
 # ====================================================
 
 
 def main():
 
-
     crew = Crew(
 
         agents=[
-
             literature_agent,
             data_agent,
             connectivity_agent,
             life_agent,
             proposal_agent,
             review_agent
-
         ],
 
         tasks=[
-
             literature_task,
             data_task,
             connectivity_task,
             life_task,
             proposal_task,
             review_task
-
         ],
 
         process=Process.sequential,
 
         verbose=True,
 
-        memory=True
+        memory=False
 
     )
 
 
-
     result = crew.kickoff()
-
 
 
     save_markdown(
         "00_FINAL_LIFE_PROPOSAL.md",
         result
     )
-
 
 
     outputs = {
@@ -551,9 +527,7 @@ def main():
 
         "06_REVIEW_REPORT.md":
             review_task.output
-
     }
-
 
 
     for filename, content in outputs.items():
@@ -562,7 +536,6 @@ def main():
             filename,
             content
         )
-
 
 
     print()
