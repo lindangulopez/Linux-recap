@@ -3,45 +3,91 @@
 # Greater Côa Valley Rewilding Project
 # ====================================================
 
-from crewai import Agent, Task, Crew, Process
-from crewai_tools import SerperDevTool
-from langchain_openai import OpenAI
 
+# ====================================================
+# IMPORTS
+# ====================================================
+
+import os
 from pathlib import Path
 from datetime import datetime
-import os
+
+from dotenv import load_dotenv
+
+from crewai import Agent, Task, Crew, Process
+from crewai_tools import SerperDevTool
+from langchain_openai import ChatOpenAI
+
 
 
 # ====================================================
-# CONFIGURATION
+# LOAD ENVIRONMENT VARIABLES
 # ====================================================
 
-os.environ["OPENAI_MODEL_NAME"] = "GPT-4o-mini"
+ENV_FILE = Path(__file__).parent / ".env"
+
+load_dotenv(ENV_FILE)
 
 
-llm = OpenAI(
-    model_name="GPT-4o-mini",
-    temperature=0.2
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+SERPER_API_KEY = os.getenv("SERPER_API_KEY")
+
+
+if not OPENAI_API_KEY:
+    raise ValueError(
+        "Missing OPENAI_API_KEY. Check your .env file."
+    )
+
+
+if not SERPER_API_KEY:
+    raise ValueError(
+        "Missing SERPER_API_KEY. Check your .env file."
+    )
+
+
+
+# ====================================================
+# AI CONFIGURATION
+# ====================================================
+
+llm = ChatOpenAI(
+
+    model="gpt-4o-mini",
+
+    temperature=0.2,
+
+    api_key=OPENAI_API_KEY
+
 )
 
 
-search_tool = SerperDevTool()
+search_tool = SerperDevTool(
+
+    api_key=SERPER_API_KEY
+
+)
+
 
 
 # ====================================================
 # MARKDOWN STORAGE
 # ====================================================
 
-RUN_DATE = datetime.now().strftime("%Y%m%d_%H%M")
+RUN_DATE = datetime.now().strftime(
+    "%Y%m%d_%H%M"
+)
+
 
 OUTPUT_DIR = Path(
     f"crew_outputs/run_{RUN_DATE}"
 )
 
+
 OUTPUT_DIR.mkdir(
     parents=True,
     exist_ok=True
 )
+
 
 
 def save_markdown(filename, content):
@@ -54,9 +100,14 @@ def save_markdown(filename, content):
         encoding="utf-8"
     ) as file:
 
-        file.write(str(content))
+        file.write(
+            str(content)
+        )
 
-    print(f"Saved: {filepath}")
+
+    print(
+        f"Saved: {filepath}"
+    )
 
 
 
@@ -66,19 +117,20 @@ def save_markdown(filename, content):
 
 
 literature_agent = Agent(
+
     role="Scientific Literature Researcher in GeoAI and Ecology",
 
-    goal=(
-        "Research scientific knowledge about GeoAI applications "
-        "for ecological connectivity, biodiversity conservation "
-        "and rewilding."
-    ),
+    goal="""
+Research scientific knowledge about GeoAI applications
+for ecological connectivity, biodiversity conservation
+and rewilding.
+""",
 
-    backstory=(
-        "A conservation scientist specialising in GIS, "
-        "ecological modelling, biodiversity research "
-        "and peer-reviewed literature analysis."
-    ),
+    backstory="""
+A conservation scientist specialising in GIS,
+ecological modelling, biodiversity research,
+peer-reviewed literature analysis and conservation AI.
+""",
 
     tools=[search_tool],
 
@@ -92,19 +144,20 @@ literature_agent = Agent(
 
 
 data_agent = Agent(
+
     role="Remote Sensing and Environmental Data Specialist",
 
-    goal=(
-        "Identify geospatial datasets, satellite products "
-        "and AI technologies useful for ecological connectivity "
-        "monitoring in the Greater Côa Valley."
-    ),
+    goal="""
+Identify geospatial datasets, satellite products
+and AI technologies useful for ecological connectivity
+monitoring in the Greater Côa Valley.
+""",
 
-    backstory=(
-        "A GIS and Earth Observation expert specialising "
-        "in Sentinel, Copernicus, biodiversity datasets "
-        "and spatial artificial intelligence workflows."
-    ),
+    backstory="""
+A GIS and Earth Observation expert specialising in
+Sentinel, Copernicus, biodiversity datasets,
+LiDAR and spatial artificial intelligence workflows.
+""",
 
     tools=[search_tool],
 
@@ -118,18 +171,19 @@ data_agent = Agent(
 
 
 connectivity_agent = Agent(
+
     role="Landscape Ecology and Connectivity Modelling Expert",
 
-    goal=(
-        "Design a GeoAI methodology for ecological connectivity "
-        "analysis and restoration planning."
-    ),
+    goal="""
+Design a GeoAI methodology for ecological connectivity
+analysis and restoration planning.
+""",
 
-    backstory=(
-        "A landscape ecologist experienced in habitat modelling, "
-        "species distribution models, wildlife corridors "
-        "and conservation planning."
-    ),
+    backstory="""
+A landscape ecologist experienced in habitat modelling,
+species distribution models, wildlife corridors,
+graph theory and conservation planning.
+""",
 
     tools=[],
 
@@ -143,17 +197,18 @@ connectivity_agent = Agent(
 
 
 life_agent = Agent(
+
     role="LIFE EU Programme Funding Specialist",
 
-    goal=(
-        "Develop a LIFE EU funding strategy for a GeoAI-driven "
-        "rewilding and ecological connectivity project."
-    ),
+    goal="""
+Develop a LIFE EU funding strategy for a GeoAI-driven
+rewilding and ecological connectivity project.
+""",
 
-    backstory=(
-        "An EU funding consultant experienced in LIFE Nature, "
-        "Biodiversity and Climate projects."
-    ),
+    backstory="""
+An EU funding consultant experienced in LIFE Nature,
+Biodiversity, Climate projects and environmental innovation.
+""",
 
     tools=[search_tool],
 
@@ -167,17 +222,18 @@ life_agent = Agent(
 
 
 proposal_agent = Agent(
+
     role="Senior LIFE EU Proposal Writer",
 
-    goal=(
-        "Transform scientific research into a competitive "
-        "LIFE EU project proposal."
-    ),
+    goal="""
+Transform scientific research into a competitive
+LIFE EU project proposal.
+""",
 
-    backstory=(
-        "An expert EU proposal writer experienced in integrating "
-        "science, innovation, impacts and policy alignment."
-    ),
+    backstory="""
+An expert EU proposal writer experienced in integrating
+science, innovation, impacts, policy alignment and budgets.
+""",
 
     tools=[],
 
@@ -191,17 +247,18 @@ proposal_agent = Agent(
 
 
 review_agent = Agent(
+
     role="LIFE EU Proposal Evaluator",
 
-    goal=(
-        "Evaluate and improve the LIFE proposal according "
-        "to EU evaluation criteria."
-    ),
+    goal="""
+Evaluate and improve the LIFE proposal according
+to EU evaluation criteria.
+""",
 
-    backstory=(
-        "A former LIFE programme evaluator specialising "
-        "in environmental innovation proposals."
-    ),
+    backstory="""
+A former LIFE programme evaluator specialising in
+environmental innovation proposals.
+""",
 
     tools=[],
 
@@ -222,27 +279,28 @@ review_agent = Agent(
 literature_task = Task(
 
     description="""
-Research the scientific literature related to:
+Research scientific literature related to:
 
 - GeoAI in biodiversity conservation
-- Artificial intelligence for habitat mapping
-- Ecological connectivity modelling
-- Rewilding science
-- Landscape restoration
+- AI habitat mapping
+- ecological connectivity modelling
+- rewilding science
+- landscape restoration
 
 Focus on Portugal and the Greater Côa Valley.
 
 Identify:
+
 - important publications
 - methodologies
 - research gaps
-- opportunities for innovation
+- innovation opportunities
 """,
 
     expected_output="""
 A scientific literature review containing:
 
-- key references
+- references
 - methods
 - lessons learned
 - research opportunities
@@ -264,16 +322,16 @@ Analyse:
 - Sentinel satellite imagery
 - Copernicus products
 - LiDAR
-- Land cover datasets
-- Biodiversity databases
-- Climate datasets
+- land cover datasets
+- biodiversity databases
+- climate datasets
 - AI platforms
 
-Explain their role in connectivity monitoring.
+Explain their role.
 """,
 
     expected_output="""
-A technical data inventory including:
+Technical data inventory containing:
 
 - dataset description
 - provider
@@ -355,7 +413,7 @@ proposal_task = Task(
     description="""
 Create a LIFE EU concept proposal using all previous reports.
 
-The proposal must include:
+Include:
 
 - project title
 - objectives
@@ -397,7 +455,7 @@ review_task = Task(
     description="""
 Act as a LIFE EU evaluator.
 
-Review the proposal for:
+Review:
 
 - scientific quality
 - innovation
@@ -422,11 +480,12 @@ A detailed evaluator report.
 
 
 # ====================================================
-# CREW EXECUTION
+# EXECUTION
 # ====================================================
 
 
 def main():
+
 
     crew = Crew(
 
@@ -457,29 +516,21 @@ def main():
         verbose=True,
 
         memory=True
+
     )
+
 
 
     result = crew.kickoff()
 
 
 
-    # -----------------------------
-    # Save final result
-    # -----------------------------
-
     save_markdown(
-
         "00_FINAL_LIFE_PROPOSAL.md",
-
         result
-
     )
 
 
-    # -----------------------------
-    # Save individual outputs
-    # -----------------------------
 
     outputs = {
 
@@ -513,9 +564,12 @@ def main():
         )
 
 
-    print("\n==============================")
+
+    print()
+    print("==============================")
     print("CREW COMPLETED")
     print("==============================")
+    print()
 
     print(
         f"Files saved in: {OUTPUT_DIR}"
